@@ -1,0 +1,8 @@
+model: gemini/gemini-3.7-flash
+yes-always: true
+auto-commits: true
+dirty-commits: true
+auto-test: true
+test-cmd: "uv run pytest"
+read:
+  - AGENT_SPEC.md
