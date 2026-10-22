@@ -47,15 +47,15 @@ Circuit Tracks AI Studio ist eine professionelle Entwicklungs- und Steuerungsumg
 
 ### ✅ Meilenstein 5: Live MIDI-Playback-Engine & Pattern-Player
 - **Echtzeit-Step-Player** (`src/bridge/player.py`):
-  - Streamt DSL-kompilierte Sequenzen über CoreMIDI präzise im 16tel-Raster an die Circuit Tracks.
-  - Akkurate Kanalzuordnung: Synth 1 (Ch 1), Synth 2 (Ch 2), Drums 1–4 (Ch 10 mit C3, D3, E3, F3).
-  - Unterstützt Loop-Zähler, Step-Callbacks für grafische Frontends/Terminals und asynchrones / synchrones Playback.
-  - Zuverlässiger Panik-Schutz bei Abbruch (Strg+C): Sendet MIDI-Realtime-Stop, All-Notes-Off (CC 123) und All-Sound-Off (CC 120), um hängende Töne zu verhindern.
+  - Streamt DSL-kompilierte Sequenzen über CoreMIDI präzise im 16tel-Raster an die Circuit Tracks Hardware oder Mocks.
+  - Korrekte Kanalzuordnung: Synth 1 (Ch 1), Synth 2 (Ch 2), Drums 1–4 (Ch 10 mit C3, D3, E3, F3).
+  - Unterstützt Loop-Zähler, Live-Step-Callbacks für Terminals/Frontends und asynchrones / synchrones Playback.
+  - Zuverlässiger Panik-Schutz bei Abbruch (ESC / q / Strg+C): Sendet MIDI-Realtime-Stop, All-Notes-Off (CC 123) und All-Sound-Off (CC 120), um hängende Noten zu verhindern.
 
 ---
 
 ## 🖥 Interaktives Terminal-Studio (`studio_cli.py`)
 
-Das Projekt beinhaltet eine interaktive Konsole mit ANSI-Farbdarstellung zur einfachen Bedienung und Inspektion:
+Das Projekt beinhaltet eine interaktive Konsole mit ANSI-Farbdarstellung und nicht-blockierender Tastaturabfrage zur einfachen Bedienung und Inspektion:
 
 Starten über:
