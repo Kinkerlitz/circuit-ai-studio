@@ -3,8 +3,19 @@
 from __future__ import annotations
 
 import logging
+import sys
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any
+
+# Ensure vendor/circuit-tracks-tools/src is on sys.path
+_PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+_VENDOR_SRC = _PROJECT_ROOT / "vendor" / "circuit-tracks-tools" / "src"
+_VENDOR_ROOT = _PROJECT_ROOT / "vendor" / "circuit-tracks-tools"
+
+for _p in (_VENDOR_SRC, _VENDOR_ROOT):
+    if _p.exists() and str(_p) not in sys.path:
+        sys.path.insert(0, str(_p))
 
 import mido
 

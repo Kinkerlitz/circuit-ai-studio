@@ -1,1 +1,13 @@
-# Placeholder
+
+Das Interface ist anschließend unter `http://localhost:3000` erreichbar.
+
+---
+
+## 🛠 Voraussetzungen & Installation
+
+- **macOS** (Mac mini / Apple Silicon oder Intel)
+- **Python >= 3.12**
+- **Node.js >= 18**
+- **uv** (empfohlener schneller Python-Paketmanager)
+
+Repository clonen und Abhängigkeiten installieren:
