@@ -208,9 +208,10 @@ class HardwareBridge:
         slot: int,
         patch_bytes: bytes,
     ) -> dict[str, Any]:
+        # Handle SysEx wrapping: if data starts with 0xF0 and ends with 0xF7, extract the 340-byte patch payload
         raw_patch = patch_bytes
-        if len(patch_bytes) == 349 and patch_bytes[0] == 0xF0 and patch_bytes[-1] == 0xF7:
-            raw_patch = patch_bytes[8:-1]
+        if len(patch_bytes) > 340 and patch_bytes[0] == 0xF0 and patch_bytes[-1] == 0xF7:
+            raw_patch = patch_bytes[-341:-1]
 
         val = validate_patch_roundtrip(raw_patch, synth=synth)
         if not val.is_valid:
