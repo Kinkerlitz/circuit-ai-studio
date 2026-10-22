@@ -1,1 +1,6 @@
-# Placeholder - delete via terminal: rm -f "uv run python studio_cli.py"
+
+---
+
+## 🌐 Web-Frontend starten
+
+Das Frontend kann lokal mit Vite gestartet werden:

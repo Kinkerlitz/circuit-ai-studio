@@ -1,6 +1,6 @@
 # Circuit Tracks AI Studio (macOS)
 
-Circuit Tracks AI Studio ist eine professionelle Entwicklungs- und Steuerungsumgebung für die Novation Circuit Tracks Groovebox unter macOS. Es verbindet direkte CoreMIDI- und SysEx-Hardware-Kommunikation mit deklarativer Pattern-DSL, strikter Offline-First-Validierung, einem schnellen FastAPI/WebSocket-Daemon, einem lokalen Model Context Protocol (MCP) Server für KI-gestützte Komposition sowie einer echtzeitfähigen MIDI-Playback-Engine.
+Circuit Tracks AI Studio ist eine professionelle Entwicklungs- und Steuerungsumgebung für die Novation Circuit Tracks Groovebox unter macOS. Es verbindet direkte CoreMIDI- und SysEx-Hardware-Kommunikation mit deklarativer Pattern-DSL, strikter Offline-First-Validierung, einem schnellen FastAPI/WebSocket-Daemon, einem lokalen Model Context Protocol (MCP) Server für KI-gestützte Komposition, einer echtzeitfähigen MIDI-Playback-Engine sowie einem modernen React/Vite Studio Frontend.
 
 ---
 
@@ -45,12 +45,16 @@ Circuit Tracks AI Studio ist eine professionelle Entwicklungs- und Steuerungsumg
   - `configure_mix_and_fx`: Konfiguriert Lautstärken der Tracks sowie Master-Effekte (Reverb, Delay, Sidechain-Tiefe).
   - `hardware_sync`: Überträgt Sessions oder Patches an die Hardware mit automatischer Slot-64-Sicherheit und Read-Back-Verifikation.
 
-### ✅ Meilenstein 5: Live MIDI-Playback-Engine & Pattern-Player
+### ✅ Meilenstein 5: Live MIDI-Playback & React Studio Frontend
 - **Echtzeit-Step-Player** (`src/bridge/player.py`):
   - Streamt DSL-kompilierte Sequenzen über CoreMIDI präzise im 16tel-Raster an die Circuit Tracks Hardware oder Mocks.
   - Korrekte Kanalzuordnung: Synth 1 (Ch 1), Synth 2 (Ch 2), Drums 1–4 (Ch 10 mit C3, D3, E3, F3).
-  - Unterstützt Loop-Zähler, Live-Step-Callbacks für Terminals/Frontends und asynchrones / synchrones Playback.
-  - Zuverlässiger Panik-Schutz bei Abbruch (ESC / q / Strg+C): Sendet MIDI-Realtime-Stop, All-Notes-Off (CC 123) und All-Sound-Off (CC 120), um hängende Noten zu verhindern.
+  - Zuverlässiger Panik-Schutz bei Abbruch (ESC / q / Strg+C): Sendet MIDI-Realtime-Stop, All-Notes-Off (CC 123) und All-Sound-Off (CC 120).
+- **React + Vite Frontend** (`frontend/`):
+  - 4x8 Pad-Grid-Ansicht für Synth 1, Synth 2, Drum 1 und Drum 2.
+  - Bidirektionale WebSocket-Verbindung zu `ws://localhost:8770/ws` mit Live Event-Monitor.
+  - "Push to Slot 64"-Funktion für nahtlose Übertragung ins Scratchpad des Circuit Tracks.
+  - Web Audio API Sound-Vorschau beim Antippen der Pads.
 
 ---
 

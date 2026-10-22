@@ -1,1 +1,1 @@
-rm -f "uv run python studio_cli.py"
+# Placeholder - delete via terminal
