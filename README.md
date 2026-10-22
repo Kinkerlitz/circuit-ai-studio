@@ -47,44 +47,8 @@ Circuit Tracks AI Studio ist eine professionelle Entwicklungs- und Steuerungsumg
 
 ---
 
-## 🛠 Voraussetzungen & Installation
+## 🖥 Interaktives Terminal-Studio (`studio_cli.py`)
 
-- **macOS** (Mac mini / Apple Silicon oder Intel)
-- **Python >= 3.10**
-- **uv** (empfohlener schneller Python-Paketmanager)
+Das Projekt beinhaltet eine interaktive Konsole mit ANSI-Farbdarstellung zur einfachen Bedienung und Inspektion:
 
-Repository clonen und Abhängigkeiten installieren:
-- `git clone https://github.com/<dein-github-username>/circuit-ai-studio.git`
-- `cd circuit-ai-studio`
-- `uv sync`
-
----
-
-## 🧪 Tests ausführen
-
-Das Projekt verfügt über 31 Unit- und Integrationstests, die alle Meilensteine ohne physische Hardware (über Mocks und In-Memory-Validierung) vollständig abdecken:
-
-Befehl zum Ausführen aller 31 Tests:
-- `uv run pytest`
-
-Ausgewählte Testbereiche gezielt ausführen:
-- Meilenstein 1 & Setup: `uv run pytest tests/test_setup.py tests/test_midi_detector.py`
-- Meilenstein 2: In-Memory Roundtrip & DSL-Compiler: `uv run pytest tests/test_core_roundtrip.py tests/test_dsl.py`
-- Meilenstein 3: FastAPI Server & WebSockets: `uv run pytest tests/test_bridge_server.py`
-- Meilenstein 4: MCP-Server & Batch-Tools: `uv run pytest tests/test_mcp_server.py`
-
----
-
-## 🔌 Hardware-Bridge Daemon starten
-
-Der Bridge-Server kann direkt gestartet werden und bindet standardmäßig auf Port 8770:
-- `uv run python -m src.bridge.server`
-
-Interaktive OpenAPI-Dokumentation (Swagger UI):
-- Öffne `http://localhost:8770/docs` im Browser.
-
----
-
-## 💡 Verwendung der MCP-Tools
-
-Beispiel für den direkten Aufruf in Python:
+Starten über:

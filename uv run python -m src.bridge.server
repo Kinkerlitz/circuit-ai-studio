@@ -1,1 +1,9 @@
-# placeholder
+
+Interaktive OpenAPI-Dokumentation (Swagger UI):
+- Öffne `http://localhost:8770/docs` im Browser.
+
+---
+
+## 💡 Verwendung der MCP-Tools
+
+Beispiel für den direkten Aufruf in Python:

@@ -1,1 +1,12 @@
-# placeholder
+
+Ausgewählte Testbereiche gezielt ausführen:
+- Meilenstein 1 & Setup: `uv run pytest tests/test_setup.py tests/test_midi_detector.py`
+- Meilenstein 2: In-Memory Roundtrip & DSL-Compiler: `uv run pytest tests/test_core_roundtrip.py tests/test_dsl.py`
+- Meilenstein 3: FastAPI Server & WebSockets: `uv run pytest tests/test_bridge_server.py`
+- Meilenstein 4: MCP-Server & Batch-Tools: `uv run pytest tests/test_mcp_server.py`
+
+---
+
+## 🔌 Hardware-Bridge Daemon starten
+
+Der Bridge-Server kann direkt gestartet werden und bindet standardmäßig auf Port 8770:
