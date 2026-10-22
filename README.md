@@ -44,7 +44,7 @@ Circuit Tracks AI Studio ist eine professionelle Entwicklungs- und Steuerungsumg
 - **uv** (empfohlener schneller Python-Paketmanager)
 
 Repository clonen und Abhängigkeiten installieren:
-- `git clone https://github.com/your-username/circuit-ai-studio.git`
+- `git clone https://github.com/<dein-github-username>/circuit-ai-studio.git`
 - `cd circuit-ai-studio`
 - `uv sync`
 
