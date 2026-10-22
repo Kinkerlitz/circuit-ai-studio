@@ -1,7 +1,7 @@
 [project]
 name = "circuit-ai-studio"
 version = "0.1.0"
-description = "Add your description here"
+description = "Circuit Tracks AI Studio daemon, core DSL, and tools"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
@@ -20,3 +20,12 @@ dev = [
     "pytest>=9.1.1",
     "pytest-asyncio>=1.4.0",
 ]
+
+[tool.pytest.ini_options]
+pythonpath = [
+    ".",
+    "src",
+    "vendor/circuit-tracks-tools/src",
+]
+testpaths = ["tests"]
+asyncio_mode = "auto"
