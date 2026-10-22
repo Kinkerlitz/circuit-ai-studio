@@ -15,7 +15,7 @@ Circuit Tracks AI Studio ist eine professionelle Entwicklungs- und Steuerungsumg
 - **NCS- & SYX-Wrapper** (`src/core/wrapper.py`): High-Level-Wrapper um das `.ncs`-Dateiformat (Session-Dateien) und Novation 340-Byte `.syx`-Synth-Patches.
 - **Offline-First Validation** (`src/core/validator.py`): Jede generierte Session und jeder Patch wird vor dem Hardware-Versand im RAM durch Re-Parsing validiert (`validate_ncs_roundtrip`, `validate_patch_roundtrip`).
 - **High-Level Pattern-DSL & Mini-Notation** (`src/core/dsl.py`):
-  - Kompakte Mini-Notation für Steps (z. B. `"C4 . [E4,G4]@2 x(vel=95,gate=1.5,m1=80)"`).
+  - Kompakte Mini-Notation für Steps (z. B. "C4 . [E4,G4]@2 x(vel=95,gate=1.5,m1=80)").
   - Native Polyrhythmik: Unabhängige Track-Längen (1–32 Steps) pro Synth (1 & 2) und Drum-Track (1–4).
   - Microsteps (0–5), Probability, Velocity und Gate-Längen.
 - **Custom-Firmware-Profile**:
