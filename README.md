@@ -1,10 +1,10 @@
 # Circuit Tracks AI Studio (macOS)
 
-Circuit Tracks AI Studio ist eine professionelle Entwicklungs- und Steuerungsumgebung für die Novation Circuit Tracks Groovebox unter macOS. Es verbindet direkte CoreMIDI- und SysEx-Hardware-Kommunikation mit deklarativer Pattern-DSL, strikter Offline-First-Validierung, einem schnellen FastAPI/WebSocket-Daemon und einem lokalen Model Context Protocol (MCP) Server für KI-gestützte Komposition und Patch-Design.
+Circuit Tracks AI Studio ist eine professionelle Entwicklungs- und Steuerungsumgebung für die Novation Circuit Tracks Groovebox unter macOS. Es verbindet direkte CoreMIDI- und SysEx-Hardware-Kommunikation mit deklarativer Pattern-DSL, strikter Offline-First-Validierung, einem schnellen FastAPI/WebSocket-Daemon, einem lokalen Model Context Protocol (MCP) Server für KI-gestützte Komposition sowie einer echtzeitfähigen MIDI-Playback-Engine.
 
 ---
 
-## 🚀 Projektstatus (Meilensteine 1–4 abgeschlossen)
+## 🚀 Projektstatus (Meilensteine 1–5 abgeschlossen)
 
 ### ✅ Meilenstein 1: Basis-Setup & CoreMIDI-Detektor
 - **CoreMIDI-Hardwareerkennung** (`src/bridge/midi_detector.py`): Automatische Erkennung von USB-Circuit-Tracks-Ports für MIDI-In und Out.
@@ -44,6 +44,12 @@ Circuit Tracks AI Studio ist eine professionelle Entwicklungs- und Steuerungsumg
   - `design_synth_patch`: Erstellt und validiert Novation-kompatible 340-Byte `.syx`-Patches im RAM inklusive Makro-Zuweisungen (Macro 1–8).
   - `configure_mix_and_fx`: Konfiguriert Lautstärken der Tracks sowie Master-Effekte (Reverb, Delay, Sidechain-Tiefe).
   - `hardware_sync`: Überträgt Sessions oder Patches an die Hardware mit automatischer Slot-64-Sicherheit und Read-Back-Verifikation.
+
+### ✅ Meilenstein 5: Live MIDI-Playback-Engine & Pattern-Player
+- **Echtzeit-Step-Player** (`src/bridge/player.py`):
+  - Streamt DSL-kompilierte Sequenzen über CoreMIDI präzise im 16tel-Raster.
+  - Akkurate Kanalzuordnung: Synth 1 (Ch 1), Synth 2 (Ch 2), Drums 1–4 (Ch 10).
+  - Unterstützt Loop-Modi, Playback-Callbacks und Notenabschaltung (`all_notes_off`).
 
 ---
 

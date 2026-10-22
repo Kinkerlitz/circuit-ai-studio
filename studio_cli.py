@@ -6,6 +6,7 @@ Provides an interactive console interface to:
 2. Scan and monitor CoreMIDI ports / Circuit Tracks connections.
 3. Synthesize and inspect 340-byte SysEx synth patches.
 4. Run the full pytest test suite directly from the menu.
+5. Live playback of compiled DSL patterns over CoreMIDI.
 """
 
 from __future__ import annotations
@@ -45,16 +46,11 @@ def print_header() -> None:
     print(f"{CYAN}{BOLD}=========================================================={RESET}")
     print(f"{CYAN}{BOLD}         CIRCUIT TRACKS AI STUDIO - CONTROL CLI           {RESET}")
     print(f"{CYAN}{BOLD}=========================================================={RESET}")
-    print(f"{DIM}macOS CoreMIDI | In-Memory Validation | MCP Batch Tools{RESET}\n")
+    print(f"{DIM}macOS CoreMIDI | In-Memory Validation | MCP Batch Tools | Live Playback{RESET}\n")
 
 
-def render_pattern_grid() -> None:
-    """Load a sample DSL polyrhythmic pattern and render terminal sequencer grid."""
-    from src.core.dsl import compile_dsl_to_song
-
-    print(f"\n{BOLD}{MAGENTA}--- [1] DSL PATTERN GRID SEQUENCER ---{RESET}\n")
-
-    dsl_sample = {
+def get_demo_dsl() -> Dict[str, Any]:
+    return {
         "name": "StudioGroove",
         "bpm": 126,
         "tracks": {
@@ -85,12 +81,19 @@ def render_pattern_grid() -> None:
         },
     }
 
+
+def render_pattern_grid() -> None:
+    """Load a sample DSL polyrhythmic pattern and render terminal sequencer grid."""
+    from src.core.dsl import compile_dsl_to_song
+
+    print(f"\n{BOLD}{MAGENTA}--- [1] DSL PATTERN GRID SEQUENCER ---{RESET}\n")
+
+    dsl_sample = get_demo_dsl()
     song = compile_dsl_to_song(dsl_sample)
     tracks = song["patterns"]["p1"]["tracks"]
 
     print(f"{BOLD}Session:{RESET} {dsl_sample['name']} | {BOLD}Tempo:{RESET} {dsl_sample['bpm']} BPM\n")
 
-    # Header row with step numbers (1 to 16)
     header = f"{'Track':<10} | " + " ".join(f"{i:02d}" for i in range(1, 17))
     print(f"{DIM}{header}{RESET}")
     print(f"{DIM}{'-' * len(header)}{RESET}")
@@ -118,7 +121,6 @@ def render_pattern_grid() -> None:
                 else:
                     cells.append(f"{DIM}[·]{RESET}")
             else:
-                # Disabled/inactive steps for tracks < 16 steps
                 cells.append(f"{DIM} - {RESET}")
 
         poly_info = f"({length} steps)" if length != 16 else ""
@@ -134,7 +136,7 @@ def scan_midi_ports() -> None:
     from src.bridge.midi_detector import detect_circuit_tracks
 
     print(f"\n{BOLD}{MAGENTA}--- [2] MIDI PORT & HARDWARE STATUS SCAN ---{RESET}\n")
-    print(f"Scanne CoreMIDI-Schnittstellen...\n")
+    print("Scanne CoreMIDI-Schnittstellen...\n")
 
     status = detect_circuit_tracks()
 
@@ -202,7 +204,7 @@ def run_all_tests() -> None:
     import pytest
 
     print(f"\n{BOLD}{MAGENTA}--- [4] PYTEST SUITE AUSFÜHREN ---{RESET}\n")
-    print(f"Starte Test-Runner über alle Test-Dateien...\n")
+    print("Starte Test-Runner über alle Test-Dateien...\n")
 
     t_start = time.perf_counter()
     exit_code = pytest.main(["-q", "--tb=short"])
@@ -218,16 +220,49 @@ def run_all_tests() -> None:
     input(f"\nDrücke {BOLD}[ENTER]{RESET} um zum Hauptmenü zurückzukehren...")
 
 
+def play_live_pattern() -> None:
+    """Stream DSL pattern over MIDI in realtime."""
+    from src.core.dsl import compile_dsl_to_song
+    from src.bridge.player import MidiPatternPlayer
+
+    print(f"\n{BOLD}{MAGENTA}--- [5] LIVE PATTERN PLAYBACK (MIDI ENGINE) ---{RESET}\n")
+
+    dsl_data = get_demo_dsl()
+    song = compile_dsl_to_song(dsl_data)
+    player = MidiPatternPlayer()
+
+    mode_label = "MOCK CONNECTION" if getattr(player.connection, "is_mock", False) else "CIRCUIT TRACKS HARDWARE"
+    print(f"Ziel-Ausgang : {BOLD}{mode_label}{RESET}")
+    print(f"Pattern-Name : {BOLD}{dsl_data['name']}{RESET} | BPM: {dsl_data['bpm']}")
+    print(f"{YELLOW}Spiele 2 Loops (32 Schritte). Zum Abbrechen jederzeit Strg+C drücken...{RESET}\n")
+
+    def on_step_callback(loop_idx: int, step_idx: int) -> None:
+        grid_visual = ["."] * 16
+        grid_visual[step_idx % 16] = f"{GREEN}{BOLD}█{RESET}"
+        sys.stdout.write(f"\rLoop {loop_idx + 1}/2 | Step {step_idx + 1:02d}/16 [{' '.join(grid_visual)}] ")
+        sys.stdout.flush()
+
+    try:
+        player.play_song(song, pattern_name="p1", loops=2, on_step=on_step_callback, blocking=True)
+        print(f"\n\n{GREEN}✔ Playback erfolgreich abgeschlossen!{RESET}")
+    except KeyboardInterrupt:
+        player.stop()
+        print(f"\n\n{YELLOW}Playback vom Benutzer angehalten.{RESET}")
+
+    input(f"\nDrücke {BOLD}[ENTER]{RESET} um zum Hauptmenü zurückzukehren...")
+
+
 def main_menu() -> None:
     """Main interactive terminal loop."""
     while True:
         clear_screen()
         print_header()
-        print(f"Bitte wähle eine Option:\n")
+        print("Bitte wähle eine Option:\n")
         print(f"  {CYAN}{BOLD}[1]{RESET} Test-Pattern (DSL) laden & als Step-Grid visualisieren")
         print(f"  {CYAN}{BOLD}[2]{RESET} MIDI-Verbindung & CoreMIDI-Ports scannen")
         print(f"  {CYAN}{BOLD}[3]{RESET} 340-Byte Synth-Patch erzeugen & SysEx inspizieren")
-        print(f"  {CYAN}{BOLD}[4]{RESET} Alle 31 Pytest-Tests ausführen")
+        print(f"  {CYAN}{BOLD}[4]{RESET} Alle Pytest-Tests ausführen")
+        print(f"  {CYAN}{BOLD}[5]{RESET} Test-Pattern live über MIDI abspielen (Playback-Engine)")
         print(f"  {RED}{BOLD}[q]{RESET} Beenden\n")
 
         choice = input(f"{BOLD}Auswahl: {RESET}").strip().lower()
@@ -240,11 +275,13 @@ def main_menu() -> None:
             generate_patch_preview()
         elif choice == "4":
             run_all_tests()
+        elif choice == "5":
+            play_live_pattern()
         elif choice in ("q", "quit", "exit"):
             print(f"\n{CYAN}Auf Wiedersehen!{RESET}\n")
             break
         else:
-            print(f"{YELLOW}Ungültige Eingabe. Bitte 1, 2, 3, 4 oder q wählen.{RESET}")
+            print(f"{YELLOW}Ungültige Eingabe. Bitte 1-5 oder q wählen.{RESET}")
             time.sleep(1)
 
 

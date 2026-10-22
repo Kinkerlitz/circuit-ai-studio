@@ -3,6 +3,4 @@
 
 ## 🧪 Tests ausführen
 
-Das Projekt verfügt über 31 Unit- und Integrationstests, die alle Meilensteine ohne physische Hardware (über Mocks und In-Memory-Validierung) vollständig abdecken:
-
-Befehl zum Ausführen aller 31 Tests:
+Befehl zum Ausführen aller Tests:

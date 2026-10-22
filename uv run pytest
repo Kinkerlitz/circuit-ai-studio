@@ -4,6 +4,7 @@ Ausgewählte Testbereiche gezielt ausführen:
 - Meilenstein 2: In-Memory Roundtrip & DSL-Compiler: `uv run pytest tests/test_core_roundtrip.py tests/test_dsl.py`
 - Meilenstein 3: FastAPI Server & WebSockets: `uv run pytest tests/test_bridge_server.py`
 - Meilenstein 4: MCP-Server & Batch-Tools: `uv run pytest tests/test_mcp_server.py`
+- Meilenstein 5: Live Playback Engine: `uv run pytest tests/test_player.py`
 
 ---
 
