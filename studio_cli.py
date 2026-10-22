@@ -12,7 +12,18 @@ from __future__ import annotations
 
 import sys
 import time
+from pathlib import Path
 from typing import Dict, Any
+
+# Ensure project root and vendor/circuit-tracks-tools are on sys.path
+PROJECT_ROOT = Path(__file__).resolve().parent
+VENDOR_ROOT = PROJECT_ROOT / "vendor" / "circuit-tracks-tools"
+VENDOR_SRC = VENDOR_ROOT / "src"
+SRC_ROOT = PROJECT_ROOT / "src"
+
+for path_to_add in (PROJECT_ROOT, SRC_ROOT, VENDOR_SRC, VENDOR_ROOT):
+    if path_to_add.exists() and str(path_to_add) not in sys.path:
+        sys.path.insert(0, str(path_to_add))
 
 # ANSI Color codes for rich terminal styling
 CYAN = "\033[96m"
