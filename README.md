@@ -15,7 +15,7 @@ Circuit Tracks AI Studio ist eine professionelle Entwicklungs- und Steuerungsumg
 - **NCS- & SYX-Wrapper** (`src/core/wrapper.py`): High-Level-Wrapper um das `.ncs`-Dateiformat (Session-Dateien) und Novation 340-Byte `.syx`-Synth-Patches.
 - **Offline-First Validation** (`src/core/validator.py`): Jede generierte Session und jeder Patch wird vor dem Hardware-Versand im RAM durch Re-Parsing validiert (`validate_ncs_roundtrip`, `validate_patch_roundtrip`).
 - **High-Level Pattern-DSL & Mini-Notation** (`src/core/dsl.py`):
-  - Kompakte Mini-Notation für Steps (z. B. "C4 . [E4,G4]@2 x(vel=95,gate=1.5,m1=80)").
+  - Kompakte Mini-Notation für Steps (z. B. Note, Chords, Rest, Parameter).
   - Native Polyrhythmik: Unabhängige Track-Längen (1–32 Steps) pro Synth (1 & 2) und Drum-Track (1–4).
   - Microsteps (0–5), Probability, Velocity und Gate-Längen.
 - **Custom-Firmware-Profile**:
@@ -44,4 +44,46 @@ Circuit Tracks AI Studio ist eine professionelle Entwicklungs- und Steuerungsumg
 - **uv** (empfohlener schneller Python-Paketmanager)
 
 Repository clonen und Abhängigkeiten installieren:
+- `git clone https://github.com/your-username/circuit-ai-studio.git`
+- `cd circuit-ai-studio`
+- `uv sync`
 
+---
+
+## 🧪 Tests ausführen
+
+Das Projekt verfügt über 20 Unit- und Integrationstests, die alle Meilensteine ohne physische Hardware (über Mocks und In-Memory-Validierung) abdecken:
+
+Befehl zum Ausführen aller Tests:
+- `uv run pytest`
+
+Ausgewählte Testbereiche gezielt ausführen:
+- Meilenstein 1 & Setup: `uv run pytest tests/test_setup.py tests/test_midi_detector.py`
+- Meilenstein 2: In-Memory Roundtrip & DSL-Compiler: `uv run pytest tests/test_core_roundtrip.py tests/test_dsl.py`
+- Meilenstein 3: FastAPI Server & WebSockets: `uv run pytest tests/test_bridge_server.py`
+
+---
+
+## 🔌 Hardware-Bridge Daemon starten
+
+Der Bridge-Server kann direkt gestartet werden und bindet standardmäßig auf Port 8770:
+- `uv run python -m src.bridge.server`
+
+Interaktive OpenAPI-Dokumentation (Swagger UI):
+- Öffne `http://localhost:8770/docs` im Browser.
+
+---
+
+## 💡 Beispiel: Pattern-DSL zu NCS kompilieren
+
+Verwendung in Python:
+- Importiere `FirmwareProfile` und `compile_dsl_to_ncs_bytes` aus `src.core.dsl`.
+- Definiere deine Polyrhythmen und Tracks deklarativ.
+- Erhalte fertige, im RAM validierte NCS-Bytes für den Hardware-Upload.
+
+---
+
+## 🗺 Ausblick: Meilensteine 4 & 5
+
+- **Meilenstein 4**: Lokaler MCP-Server (`src/mcp/server.py`) zur KI-gestützten Komposition (`compose_pattern_batch`, `design_synth_patch`, `configure_mix_and_fx`, `hardware_sync`).
+- **Meilenstein 5**: Modernes Web-Frontend (React + Vite + Web Audio API) mit 4x8 Pad-Grid, interaktivem Microstep-Inspektor und bidirektionalem WebSocket-Sync zu Port 8770.

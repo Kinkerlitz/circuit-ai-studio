@@ -1,7 +1,1 @@
-
----
-
-## 🗺 Ausblick: Meilensteine 4 & 5
-
-- **Meilenstein 4**: Lokaler MCP-Server (`src/mcp/server.py`) zur KI-gestützten Komposition (`compose_pattern_batch`, `design_synth_patch`, `configure_mix_and_fx`, `hardware_sync`).
-- **Meilenstein 5**: Modernes Web-Frontend (React + Vite + Web Audio API) mit 4x8 Pad-Grid, interaktivem Microstep-Inspektor und bidirektionalem WebSocket-Sync zu Port 8770.
+# placeholder

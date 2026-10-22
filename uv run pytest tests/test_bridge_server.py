@@ -1,7 +1,1 @@
-
----
-
-## 🔌 Hardware-Bridge Daemon starten
-
-Der Bridge-Server kann direkt gestartet werden und bindet standardmäßig auf Port `8770`:
-
+# placeholder
