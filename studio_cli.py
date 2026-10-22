@@ -128,8 +128,9 @@ def scan_midi_ports() -> None:
     status = detect_circuit_tracks()
 
     if status.is_connected and not status.is_mock:
+        display_name = status.device_name or status.port_name or "Circuit Tracks"
         print(f"Status: {GREEN}{BOLD}● HARDWARE ONLINE{RESET}")
-        print(f"Gerät : {BOLD}{status.device_name}{RESET}")
+        print(f"Gerät : {BOLD}{display_name}{RESET}")
         print(f"Port  : {status.port_name}")
     else:
         print(f"Status: {YELLOW}{BOLD}○ MOCK-MODUS AKTIV{RESET} (Kein physischer Circuit Tracks erkannt)")

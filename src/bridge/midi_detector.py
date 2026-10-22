@@ -7,7 +7,12 @@ from dataclasses import dataclass, field
 from typing import Any
 
 import mido
-from circuit_tracks.midi import MidiConnection
+
+try:
+    from circuit_tracks.midi import MidiConnection
+except (ImportError, ModuleNotFoundError):
+    # Fallback definition if vendor midi module is not directly importable
+    MidiConnection = None  # type: ignore
 
 logger = logging.getLogger(__name__)
 
@@ -20,6 +25,7 @@ class MidiDeviceStatus:
     is_mock: bool
     port_name: str | None
     input_port_name: str | None
+    device_name: str | None = None
     available_outputs: list[str] = field(default_factory=list)
     available_inputs: list[str] = field(default_factory=list)
 
@@ -149,6 +155,7 @@ def detect_circuit_tracks() -> MidiDeviceStatus:
             is_mock=False,
             port_name=matched_out,
             input_port_name=matched_in,
+            device_name=matched_out,
             available_outputs=out_ports,
             available_inputs=in_ports,
         )
@@ -158,15 +165,19 @@ def detect_circuit_tracks() -> MidiDeviceStatus:
         is_mock=True,
         port_name=None,
         input_port_name=None,
+        device_name=None,
         available_outputs=out_ports,
         available_inputs=in_ports,
     )
 
 
-def get_midi_connection(force_mock: bool = False) -> MidiConnection | MockCircuitTracksConnection:
+def get_midi_connection(force_mock: bool = False) -> Any:
     """Obtain a connected hardware MIDI connection or return MockCircuitTracksConnection."""
-    if force_mock:
-        logger.info("Mock connection requested explicitly.")
+    if force_mock or MidiConnection is None:
+        if MidiConnection is None:
+            logger.debug("MidiConnection class not available. Defaulting to mock.")
+        else:
+            logger.info("Mock connection requested explicitly.")
         return MockCircuitTracksConnection()
 
     status = detect_circuit_tracks()
