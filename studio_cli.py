@@ -247,7 +247,7 @@ def play_live_pattern() -> None:
         print(f"\n\n{GREEN}✔ Playback erfolgreich abgeschlossen!{RESET}")
     except KeyboardInterrupt:
         player.stop()
-        print(f"\n\n{YELLOW}Playback vom Benutzer angehalten.{RESET}")
+        print(f"\n\n{YELLOW}Playback vom Benutzer angehalten. MIDI-Stop & All-Notes-Off gesendet.{RESET}")
 
     input(f"\nDrücke {BOLD}[ENTER]{RESET} um zum Hauptmenü zurückzukehren...")
 

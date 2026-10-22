@@ -47,7 +47,7 @@ class MidiPatternPlayer:
         return self._is_playing
 
     def stop(self) -> None:
-        """Stop playback and send all-notes-off to active channels."""
+        """Stop playback and send all-notes-off and realtime-stop to active channels."""
         self._stop_event.set()
         self._is_playing = False
         if self._thread and self._thread.is_alive():
@@ -55,11 +55,28 @@ class MidiPatternPlayer:
         self._silence_all()
 
     def _silence_all(self) -> None:
-        for ch in {0, 1, 9}:
+        """Send MIDI Stop, All-Notes-Off (CC 123), and All-Sound-Off (CC 120) to prevent hanging notes."""
+        # 1. Send MIDI Realtime Stop command
+        try:
+            if hasattr(self.connection, "send_realtime"):
+                self.connection.send_realtime("stop")
+        except Exception as exc:
+            logger.debug("Error sending realtime stop: %s", exc)
+
+        # 2. Reset channels: Synth 1 (0), Synth 2 (1), Drums (9), MIDI 1-2 (2, 3)
+        channels_to_reset = {0, 1, 2, 3, 9}
+        for ch in channels_to_reset:
             try:
                 self.connection.all_notes_off(ch)
             except Exception as exc:
                 logger.debug("Error sending all_notes_off on channel %d: %s", ch, exc)
+
+            try:
+                # CC 120 = All Sound Off, CC 123 = All Notes Off
+                self.connection.control_change(channel=ch, control=120, value=0)
+                self.connection.control_change(channel=ch, control=123, value=0)
+            except Exception as exc:
+                logger.debug("Error sending CC reset on channel %d: %s", ch, exc)
 
     def play_step(
         self,
@@ -145,6 +162,13 @@ class MidiPatternPlayer:
                     default=16,
                 )
 
+                # Send MIDI Realtime Start command
+                try:
+                    if hasattr(self.connection, "send_realtime"):
+                        self.connection.send_realtime("start")
+                except Exception:
+                    pass
+
                 loop_count = 0
                 while not self._stop_event.is_set():
                     for current_step in range(max_len):
@@ -176,6 +200,9 @@ class MidiPatternPlayer:
                     loop_count += 1
                     if loops > 0 and loop_count >= loops:
                         break
+            except KeyboardInterrupt:
+                logger.info("Playback interrupted by user.")
+                raise
             finally:
                 self._silence_all()
                 self._is_playing = False

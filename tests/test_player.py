@@ -89,3 +89,21 @@ def test_play_song_loops(player, mock_connection):
 def test_player_stop(player, mock_connection):
     player.stop()
     assert player.is_playing is False
+
+
+def test_player_silence_all_sends_stop_and_sound_off(player, mock_connection):
+    player.stop()
+
+    # Check that realtime stop was dispatched
+    realtime_msgs = [
+        m for m in mock_connection.sent_messages
+        if m.get("type") == "realtime" and m.get("msg_type") == "stop"
+    ]
+    assert len(realtime_msgs) >= 1
+
+    # Check that CC 120 (All Sound Off) and CC 123 (All Notes Off) were sent
+    cc_msgs = [m for m in mock_connection.sent_messages if m.get("type") == "control_change"]
+    cc_120 = [m for m in cc_msgs if m.get("control") == 120]
+    cc_123 = [m for m in cc_msgs if m.get("control") == 123]
+    assert len(cc_120) > 0
+    assert len(cc_123) > 0
