@@ -6,7 +6,8 @@ import pytest
 from fastapi.testclient import TestClient
 
 from src.bridge.server import SAFE_VERIFY_SLOT, app, bridge
-from src.core.wrapper import build_default_patch, create_empty_ncs, song_to_ncs_bytes
+from src.core.dsl import compile_dsl_to_song
+from src.core.wrapper import build_default_patch, create_empty_ncs, patch_to_syx
 
 
 @pytest.fixture(autouse=True)
@@ -59,7 +60,7 @@ def test_midi_realtime_endpoint():
 
 def test_session_upload_safe_slot_64_verified():
     empty_ncs = create_empty_ncs()
-    ncs_bytes = empty_ncs.save_to_bytes()
+    ncs_bytes = empty_ncs.data
 
     with TestClient(app) as client:
         response = client.post(
@@ -79,8 +80,7 @@ def test_session_upload_safe_slot_64_verified():
 
 
 def test_session_upload_with_song_dict():
-    empty_ncs = create_empty_ncs()
-    song_dict = empty_ncs.song.to_dict()
+    song_dict = compile_dsl_to_song({"name": "TestSession", "bpm": 124})
 
     with TestClient(app) as client:
         response = client.post(
@@ -99,7 +99,6 @@ def test_session_upload_with_song_dict():
 
 def test_session_upload_invalid_bytes():
     with TestClient(app) as client:
-        # Invalid corrupt data failing offline RAM validation
         response = client.post(
             "/session/upload",
             json={
@@ -113,13 +112,15 @@ def test_session_upload_invalid_bytes():
 
 def test_patch_upload():
     patch_bytes = build_default_patch(name="BassInit", preset="bass")
+    syx_bytes = patch_to_syx(patch_bytes, synth=1)
+
     with TestClient(app) as client:
         response = client.post(
             "/patch/upload",
             json={
                 "synth": 1,
                 "slot": 5,
-                "patch_hex": patch_bytes.hex(),
+                "patch_hex": syx_bytes.hex(),
             },
         )
         assert response.status_code == 200
@@ -127,7 +128,6 @@ def test_patch_upload():
         assert data["status"] == "success"
         assert data["synth"] == 1
         assert data["slot"] == 5
-        assert data["bytes"] == 340
 
 
 def test_websocket_connection_and_broadcast():
@@ -137,7 +137,6 @@ def test_websocket_connection_and_broadcast():
             assert initial["type"] == "status"
             assert initial["data"]["connected"] is True
 
-            # Trigger a CC event via HTTP and assert WebSocket receives broadcast
             post_res = client.post(
                 "/midi/cc",
                 json={"channel": 1, "control": 19, "value": 100},

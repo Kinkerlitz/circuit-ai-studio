@@ -16,7 +16,7 @@ from src.bridge.midi_detector import (
     get_midi_connection,
 )
 from src.core.validator import validate_ncs_roundtrip, validate_patch_roundtrip
-from src.core.wrapper import load_ncs_from_bytes, song_to_ncs_bytes
+from src.core.wrapper import patch_to_syx, song_to_ncs_bytes
 
 SAFE_VERIFY_SLOT = 64  # Dedicated slot 64 for safe write & read-back verification
 
@@ -75,8 +75,23 @@ class HardwareBridge:
         dev_status = detect_circuit_tracks()
         is_mock = isinstance(self.connection, MockCircuitTracksConnection)
         port_name = self.connection.port_name if self.connection else None
+
+        connected = False
+        if self.connection:
+            connected = bool(
+                getattr(
+                    self.connection,
+                    "connected",
+                    getattr(
+                        self.connection,
+                        "_connected",
+                        self.connection.port_name is not None,
+                    ),
+                )
+            )
+
         return {
-            "connected": self.connection.connected if self.connection else False,
+            "connected": connected,
             "port_name": port_name,
             "is_mock": is_mock,
             "detected_device": {
@@ -154,9 +169,6 @@ class HardwareBridge:
                 raise RuntimeError("MIDI connection not initialized")
 
             if verify:
-                # Safe-Slot-64 read-back verification routine
-                # Request current content of Safe Slot 64 or upload to safe slot first
-                # Here we verify integrity on slot write
                 self._write_session_to_slot(slot, ncs_bytes)
                 verified_bytes = self._read_session_from_slot(slot)
                 if verified_bytes is not None and verified_bytes != ncs_bytes:
@@ -179,13 +191,8 @@ class HardwareBridge:
         if not self.connection:
             raise RuntimeError("MIDI connection offline")
         if isinstance(self.connection, MockCircuitTracksConnection):
-            # Save into mock device internal memory
             self.connection.state["slots"] = self.connection.state.get("slots", {})
             self.connection.state["slots"][slot] = ncs_bytes
-        else:
-            # Physical SysEx packets
-            # Session dump upload protocol packet sequence
-            pass
 
     def _read_session_from_slot(self, slot: int) -> bytes | None:
         if not self.connection:
@@ -208,7 +215,6 @@ class HardwareBridge:
         async with self._lock:
             if not self.connection:
                 raise RuntimeError("MIDI connection not initialized")
-            # In mock or hardware, register patch
             if isinstance(self.connection, MockCircuitTracksConnection):
                 key = f"synth_{synth}_patches"
                 self.connection.state[key] = self.connection.state.get(key, {})
@@ -316,10 +322,8 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
     await websocket.accept()
     bridge.active_websockets.add(websocket)
     try:
-        # Send current status immediately
         await websocket.send_json({"type": "status", "data": bridge.get_status()})
         while True:
-            # Keep alive and receive any client messages/ping
             msg = await websocket.receive_text()
             if msg == "ping":
                 await websocket.send_text("pong")
