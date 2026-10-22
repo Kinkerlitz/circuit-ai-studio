@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 import re
 from dataclasses import dataclass, field
 from enum import Enum
@@ -179,11 +180,11 @@ class PatternDSLCompiler:
                 if mini_str:
                     mini_steps = self.parse_mini_notation(mini_str, track_len)
                     for k, v in mini_steps.items():
-                        steps_out[str(k)] = v
+                        steps_out[str(k)] = copy.deepcopy(v)
 
                 explicit_steps = track_val.get("steps", {})
                 for k, v in explicit_steps.items():
-                    steps_out[str(k)] = v
+                    steps_out[str(k)] = copy.deepcopy(v)
 
                 # Handle Custom Firmware (hacks_rc0s): Chromatic Drum support
                 if is_drum:
@@ -196,10 +197,20 @@ class PatternDSLCompiler:
                             s_v.pop("tie", None)
                         elif self.firmware_profile == FirmwareProfile.HACKS_RC0S:
                             # hacks_rc0s allows pitch offsets / chromatic mapping via sample pitch
+                            note_val = None
                             if "note" in s_v:
-                                note_val = s_v.pop("note")
-                                # Map note 60 (center) to pitch 64
+                                raw_n = s_v.pop("note")
+                                note_val = self._parse_note_str(str(raw_n)) if not isinstance(raw_n, int) else raw_n
+                            elif "notes" in s_v and s_v["notes"]:
+                                raw_n = s_v.pop("notes")[0]
+                                note_val = self._parse_note_str(str(raw_n)) if not isinstance(raw_n, int) else raw_n
+
+                            if note_val is not None:
+                                # Map note 60 (C4 center) to pitch 64
                                 s_v["sample_pitch"] = max(0, min(127, 64 + (note_val - 60)))
+                            s_v.pop("notes", None)
+                            s_v.pop("gate", None)
+                            s_v.pop("tie", None)
 
                 compiled_track: dict[str, Any] = {
                     "steps": {k: v for k, v in steps_out.items() if int(k) < 32}
