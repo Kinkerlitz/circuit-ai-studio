@@ -7,14 +7,20 @@ Provides an interactive console interface to:
 3. Synthesize and inspect 340-byte SysEx synth patches.
 4. Run the full pytest test suite directly from the menu.
 5. Live playback of compiled DSL patterns over CoreMIDI.
+
+Includes non-blocking keyboard polling with instant cancel / emergency MIDI panic.
 """
 
 from __future__ import annotations
 
+import select
 import sys
+import termios
+import threading
 import time
+import tty
 from pathlib import Path
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
 # Ensure project root and vendor/circuit-tracks-tools are on sys.path
 PROJECT_ROOT = Path(__file__).resolve().parent
@@ -46,7 +52,64 @@ def print_header() -> None:
     print(f"{CYAN}{BOLD}=========================================================={RESET}")
     print(f"{CYAN}{BOLD}         CIRCUIT TRACKS AI STUDIO - CONTROL CLI           {RESET}")
     print(f"{CYAN}{BOLD}=========================================================={RESET}")
-    print(f"{DIM}macOS CoreMIDI | In-Memory Validation | MCP Batch Tools | Live Playback{RESET}\n")
+    print(f"{DIM}macOS CoreMIDI | In-Memory Validation | Instant Cancel (ESC/q){RESET}\n")
+
+
+class NonBlockingInput:
+    """Context manager to read single keypresses non-blockingly on Unix/macOS."""
+
+    def __enter__(self):
+        self.old_settings = termios.tcgetattr(sys.stdin)
+        tty.setcbreak(sys.stdin.fileno())
+        return self
+
+    def __exit__(self, type, value, traceback):
+        termios.tcsetattr(sys.stdin, termios.TCSADRAIN, self.old_settings)
+
+    @staticmethod
+    def check_key(timeout: float = 0.0) -> Optional[str]:
+        """Check if a key is available within timeout seconds without blocking."""
+        rlist, _, _ = select.select([sys.stdin], [], [], timeout)
+        if rlist:
+            char = sys.stdin.read(1)
+            # Check for ESC sequence or single keys
+            if char == "\x1b":  # ESC
+                return "ESC"
+            elif char == "\x03":  # Ctrl+C
+                return "CANCEL"
+            return char
+        return None
+
+
+def safe_cancel_midi() -> None:
+    """Emergency MIDI silence to ensure Circuit Tracks does not freeze or hang."""
+    try:
+        from src.bridge.midi_detector import get_midi_connection
+        conn = get_midi_connection()
+        if hasattr(conn, "send_realtime"):
+            conn.send_realtime("stop")
+        for ch in {0, 1, 2, 3, 9}:
+            try:
+                conn.all_notes_off(ch)
+                conn.control_change(channel=ch, control=120, value=0)  # All Sound Off
+                conn.control_change(channel=ch, control=123, value=0)  # All Notes Off
+            except Exception:
+                pass
+    except Exception as exc:
+        sys.stderr.write(f"\nHinweis bei MIDI-Abschaltung: {exc}\n")
+
+
+def wait_for_enter_or_cancel() -> None:
+    """Wait for user ENTER or ESC/q/Ctrl+C to cancel promptly."""
+    print(f"\nDrücke {BOLD}[ENTER]{RESET} oder {RED}[ESC / q]{RESET} zum Abbrechen...", end="", flush=True)
+    with NonBlockingInput():
+        while True:
+            key = NonBlockingInput.check_key(timeout=0.1)
+            if key in ("\n", "\r", " ", "ESC", "q", "Q", "CANCEL"):
+                if key in ("ESC", "q", "Q", "CANCEL"):
+                    safe_cancel_midi()
+                break
+    print()
 
 
 def get_demo_dsl() -> Dict[str, Any]:
@@ -128,17 +191,40 @@ def render_pattern_grid() -> None:
         print(row)
 
     print(f"\n{GREEN}✔ Pattern erfolgreich in NCS-kompatibles Song-Modell kompiliert!{RESET}")
-    input(f"\nDrücke {BOLD}[ENTER]{RESET} um zum Hauptmenü zurückzukehren...")
+    wait_for_enter_or_cancel()
 
 
 def scan_midi_ports() -> None:
-    """Scan and print MIDI devices and status via detect_circuit_tracks."""
+    """Scan and print MIDI devices with responsive cancel support."""
     from src.bridge.midi_detector import detect_circuit_tracks
 
     print(f"\n{BOLD}{MAGENTA}--- [2] MIDI PORT & HARDWARE STATUS SCAN ---{RESET}\n")
-    print("Scanne CoreMIDI-Schnittstellen...\n")
+    print("Scanne CoreMIDI-Schnittstellen (Drücke jederzeit ESC zum Abbrechen)...\n")
 
-    status = detect_circuit_tracks()
+    result = {}
+
+    def _worker():
+        try:
+            result["status"] = detect_circuit_tracks()
+        except Exception as err:
+            result["error"] = err
+
+    t = threading.Thread(target=_worker, daemon=True)
+    t.start()
+
+    with NonBlockingInput():
+        while t.is_alive():
+            key = NonBlockingInput.check_key(timeout=0.05)
+            if key in ("ESC", "q", "Q", "CANCEL"):
+                print(f"\n{YELLOW}Scan vom Benutzer abgebrochen.{RESET}")
+                safe_cancel_midi()
+                return
+
+    status = result.get("status")
+    if not status:
+        print(f"{RED}Fehler beim Ermitteln der Ports: {result.get('error')}{RESET}")
+        wait_for_enter_or_cancel()
+        return
 
     if status.is_connected and not status.is_mock:
         display_name = status.device_name or status.port_name or "Circuit Tracks"
@@ -167,7 +253,7 @@ def scan_midi_ports() -> None:
     else:
         print(f"  {DIM}(Keine physischen CoreMIDI-Eingänge gelistet){RESET}")
 
-    input(f"\nDrücke {BOLD}[ENTER]{RESET} um zum Hauptmenü zurückzukehren...")
+    wait_for_enter_or_cancel()
 
 
 def generate_patch_preview() -> None:
@@ -196,11 +282,11 @@ def generate_patch_preview() -> None:
         ascii_str = "".join(chr(b) if 32 <= b <= 126 else "." for b in chunk)
         print(f"  {offset:04X}:  {hex_str:<48}  {DIM}|{ascii_str}|{RESET}")
 
-    input(f"\nDrücke {BOLD}[ENTER]{RESET} um zum Hauptmenü zurückzukehren...")
+    wait_for_enter_or_cancel()
 
 
 def run_all_tests() -> None:
-    """Execute pytest suite and display formatted results."""
+    """Execute pytest suite and display formatted results with abort capability."""
     import pytest
 
     print(f"\n{BOLD}{MAGENTA}--- [4] PYTEST SUITE AUSFÜHREN ---{RESET}\n")
@@ -217,11 +303,11 @@ def run_all_tests() -> None:
         print(f"{RED}{BOLD}✘ FEHLER: Test-Suite meldete Fehler (Exit-Code {exit_code}){RESET}")
 
     print(f"Dauer: {duration:.2f} Sekunden")
-    input(f"\nDrücke {BOLD}[ENTER]{RESET} um zum Hauptmenü zurückzukehren...")
+    wait_for_enter_or_cancel()
 
 
 def play_live_pattern() -> None:
-    """Stream DSL pattern over MIDI in realtime."""
+    """Stream DSL pattern over MIDI in realtime with non-blocking key abort."""
     from src.core.dsl import compile_dsl_to_song
     from src.bridge.player import MidiPatternPlayer
 
@@ -234,26 +320,32 @@ def play_live_pattern() -> None:
     mode_label = "MOCK CONNECTION" if getattr(player.connection, "is_mock", False) else "CIRCUIT TRACKS HARDWARE"
     print(f"Ziel-Ausgang : {BOLD}{mode_label}{RESET}")
     print(f"Pattern-Name : {BOLD}{dsl_data['name']}{RESET} | BPM: {dsl_data['bpm']}")
-    print(f"{YELLOW}Spiele 2 Loops (32 Schritte). Zum Abbrechen jederzeit Strg+C drücken...{RESET}\n")
+    print(f"{YELLOW}Spielt Sequenz ab. Beliebige Taste oder [ESC / q / Strg+C] bricht SOFORT ab!{RESET}\n")
 
-    def on_step_callback(loop_idx: int, step_idx: int) -> None:
-        grid_visual = ["."] * 16
-        grid_visual[step_idx % 16] = f"{GREEN}{BOLD}█{RESET}"
-        sys.stdout.write(f"\rLoop {loop_idx + 1}/2 | Step {step_idx + 1:02d}/16 [{' '.join(grid_visual)}] ")
-        sys.stdout.flush()
+    # Start playback asynchronously in background thread
+    player.play_song(song, pattern_name="p1", loops=4, blocking=False)
 
-    try:
-        player.play_song(song, pattern_name="p1", loops=2, on_step=on_step_callback, blocking=True)
-        print(f"\n\n{GREEN}✔ Playback erfolgreich abgeschlossen!{RESET}")
-    except KeyboardInterrupt:
-        player.stop()
-        print(f"\n\n{YELLOW}Playback vom Benutzer angehalten. MIDI-Stop & All-Notes-Off gesendet.{RESET}")
+    canceled = False
+    with NonBlockingInput():
+        while player.is_playing:
+            key = NonBlockingInput.check_key(timeout=0.03)
+            if key is not None:
+                canceled = True
+                print(f"\n\n{YELLOW}Abbruch angefordert ({key}). Stoppe MIDI sofort...{RESET}")
+                player.stop()
+                safe_cancel_midi()
+                break
 
-    input(f"\nDrücke {BOLD}[ENTER]{RESET} um zum Hauptmenü zurückzukehren...")
+    if not canceled:
+        print(f"\n\n{GREEN}✔ Playback regulär abgeschlossen!{RESET}")
+    else:
+        print(f"{GREEN}✔ Panik-Signal & All-Notes-Off erfolgreich an Circuit Tracks gesendet.{RESET}")
+
+    wait_for_enter_or_cancel()
 
 
 def main_menu() -> None:
-    """Main interactive terminal loop."""
+    """Main interactive terminal loop with instant responsive keystrokes."""
     while True:
         clear_screen()
         print_header()
@@ -262,32 +354,42 @@ def main_menu() -> None:
         print(f"  {CYAN}{BOLD}[2]{RESET} MIDI-Verbindung & CoreMIDI-Ports scannen")
         print(f"  {CYAN}{BOLD}[3]{RESET} 340-Byte Synth-Patch erzeugen & SysEx inspizieren")
         print(f"  {CYAN}{BOLD}[4]{RESET} Alle Pytest-Tests ausführen")
-        print(f"  {CYAN}{BOLD}[5]{RESET} Test-Pattern live über MIDI abspielen (Playback-Engine)")
-        print(f"  {RED}{BOLD}[q]{RESET} Beenden\n")
+        print(f"  {CYAN}{BOLD}[5]{RESET} Test-Pattern live über MIDI abspielen (mit Sofort-Abbruch)")
+        print(f"  {RED}{BOLD}[q / ESC]{RESET} Beenden\n")
+        print(f"{DIM}(Tastendruck genügt, kein [ENTER] erforderlich){RESET}\n")
+        print(f"{BOLD}Auswahl: {RESET}", end="", flush=True)
 
-        choice = input(f"{BOLD}Auswahl: {RESET}").strip().lower()
+        with NonBlockingInput():
+            while True:
+                choice = NonBlockingInput.check_key(timeout=0.1)
+                if choice is not None:
+                    break
 
-        if choice == "1":
+        choice_clean = choice.strip().lower() if choice else ""
+
+        if choice_clean == "1":
             render_pattern_grid()
-        elif choice == "2":
+        elif choice_clean == "2":
             scan_midi_ports()
-        elif choice == "3":
+        elif choice_clean == "3":
             generate_patch_preview()
-        elif choice == "4":
+        elif choice_clean == "4":
             run_all_tests()
-        elif choice == "5":
+        elif choice_clean == "5":
             play_live_pattern()
-        elif choice in ("q", "quit", "exit"):
+        elif choice_clean in ("q", "escape", "esc", "cancel") or choice == "ESC":
+            safe_cancel_midi()
             print(f"\n{CYAN}Auf Wiedersehen!{RESET}\n")
             break
         else:
-            print(f"{YELLOW}Ungültige Eingabe. Bitte 1-5 oder q wählen.{RESET}")
-            time.sleep(1)
+            print(f"\n{YELLOW}Ungültige Taste '{choice}'. Bitte 1-5 oder q wählen.{RESET}")
+            time.sleep(0.6)
 
 
 if __name__ == "__main__":
     try:
         main_menu()
-    except KeyboardInterrupt:
-        print(f"\n\n{CYAN}Abbruch durch Benutzer. Bis zum nächsten Mal!{RESET}\n")
+    except (KeyboardInterrupt, SystemExit):
+        safe_cancel_midi()
+        print(f"\n\n{CYAN}Abbruch durch Benutzer. Sichere MIDI-Stummschaltung ausgeführt!{RESET}\n")
         sys.exit(0)
