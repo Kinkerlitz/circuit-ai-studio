@@ -1,0 +1,63 @@
+kai@Mac-mini-von-Kai circuit-ai-studio % ls -la | grep aider
+-rw-r--r--   1 kai  staff  621207 22 Okt. 22:47 .aider.chat.history.md
+-rw-r--r--   1 kai  staff     153 22 Okt. 20:31 .aider.conf.yml
+-rw-r--r--   1 kai  staff    9619 22 Okt. 22:47 .aider.input.history
+drwxr-xr-x   3 kai  staff      96 22 Okt. 21:16 .aider.tags.cache.v4
+-rwxr-xr-x   1 kai  staff     350 22 Okt. 20:31 aider_start.sh
+kai@Mac-mini-von-Kai circuit-ai-studio % cat .aider.conf.yml
+model: gemini/gemini-3.7-flash
+yes-always: true
+auto-commits: true
+dirty-commits: true
+auto-test: true
+test-cmd: "uv run pytest"
+read:
+  - AGENT_SPEC.md
+kai@Mac-mini-von-Kai circuit-ai-studio % aider --models gemini/
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+Models which match "gemini/":
+- gemini/deep-research-max-preview-04-2026
+- gemini/deep-research-preview-04-2026
+- gemini/deep-research-pro-preview-12-2025
+- gemini/gemini-2.5-computer-use-preview-10-2025
+- gemini/gemini-2.5-flash
+- gemini/gemini-2.5-flash-lite
+- gemini/gemini-2.5-flash-lite-preview-06-17
+- gemini/gemini-2.5-pro
+- gemini/gemini-2.5-pro-exp-03-25
+- gemini/gemini-2.5-pro-preview-05-06
+- gemini/gemini-2.5-pro-preview-06-05
+- gemini/gemini-2.5-pro-preview-tts
+- gemini/gemini-3-flash-preview
+- gemini/gemini-3.1-flash-lite
+- gemini/gemini-3.1-flash-lite-preview
+- gemini/gemini-3.1-pro-preview
+- gemini/gemini-3.1-pro-preview-customtools
+- gemini/gemini-3.5-flash
+- gemini/gemini-3.5-flash-lite
+- gemini/gemini-3.6-flash
+- gemini/gemini-3.7-flash
+- gemini/gemini-3.8-flash
+- gemini/gemini-4-argon
+- gemini/gemini-exp-1114
+- gemini/gemini-exp-1206
+- gemini/gemini-flash-latest
+- gemini/gemini-flash-lite-latest
+- gemini/gemini-gemma-2-27b-it
+- gemini/gemini-gemma-2-9b-it
+- gemini/gemini-omni-1.1-flash
+- gemini/gemini-omni-flash-preview
+- gemini/gemini-pro-latest
+- gemini/gemini-robotics-er-2-preview
+- gemini/gemini-robotics-er-2-streaming-preview
+- gemini/gemma-3-27b-it
+- gemini/gemma-4-26b-a4b-it
+- gemini/gemma-4-31b-it
+- gemini/learnlm-1.5-pro-experimental
+- gemini/lyria-3-clip-preview
+- gemini/lyria-3-pro-preview
+- gemini/lyria-3.5
+- gemini/lyria-3.5-clip-preview
+- gemini/lyria-3.5-pro-preview
+- gemini/lyria-realtime-exp
+kai@Mac-mini-von-Kai circuit-ai-studio % 
