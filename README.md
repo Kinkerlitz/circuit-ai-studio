@@ -1,10 +1,10 @@
 # Circuit Tracks AI Studio (macOS)
 
-Circuit Tracks AI Studio ist eine professionelle Entwicklungs- und Steuerungsumgebung für die Novation Circuit Tracks Groovebox unter macOS. Es verbindet direkte CoreMIDI- und SysEx-Hardware-Kommunikation mit deklarativer Pattern-DSL, strikter Offline-First-Validierung und einem schnellen FastAPI/WebSocket-Daemon.
+Circuit Tracks AI Studio ist eine professionelle Entwicklungs- und Steuerungsumgebung für die Novation Circuit Tracks Groovebox unter macOS. Es verbindet direkte CoreMIDI- und SysEx-Hardware-Kommunikation mit deklarativer Pattern-DSL, strikter Offline-First-Validierung, einem schnellen FastAPI/WebSocket-Daemon und einem lokalen Model Context Protocol (MCP) Server für KI-gestützte Komposition und Patch-Design.
 
 ---
 
-## 🚀 Projektstatus (Meilensteine 1–3 abgeschlossen)
+## 🚀 Projektstatus (Meilensteine 1–4 abgeschlossen)
 
 ### ✅ Meilenstein 1: Basis-Setup & CoreMIDI-Detektor
 - **CoreMIDI-Hardwareerkennung** (`src/bridge/midi_detector.py`): Automatische Erkennung von USB-Circuit-Tracks-Ports für MIDI-In und Out.
@@ -35,6 +35,16 @@ Circuit Tracks AI Studio ist eine professionelle Entwicklungs- und Steuerungsumg
 - **Live-WebSocket-Verbindung** (`/ws`):
   - Echtzeit-Event-Broadcasting (z. B. `note_on`, `control_change`, `session_uploaded`, `patch_uploaded`) für Frontends und MCP-Tools.
 
+### ✅ Meilenstein 4: Lokaler MCP-Server (Model Context Protocol)
+- **MCP-Server & Tool-Registry** (`src/mcp/server.py`):
+  - Exponiert High-Level Batch-Tools für LLMs und Entwicklungsumgebungen (z. B. Claude Desktop / Cursor / Windsurf / Aider).
+  - Kommuniziert mit dem Hardware-Daemon auf Port `8770` und unterstützt nahtloses Mock-Fallback, falls der Daemon offline ist.
+- **High-Level Tools**:
+  - `compose_pattern_batch`: Generiert Tracks und Steps für Synth 1–2 und Drum 1–4 mit Polyrhythmik, Microsteps, Gate und Probability inklusive Firmware-Profil-Validierung (`stock` vs. `hacks_rc0s`).
+  - `design_synth_patch`: Erstellt und validiert Novation-kompatible 340-Byte `.syx`-Patches im RAM inklusive Makro-Zuweisungen (Macro 1–8).
+  - `configure_mix_and_fx`: Konfiguriert Lautstärken der Tracks sowie Master-Effekte (Reverb, Delay, Sidechain-Tiefe).
+  - `hardware_sync`: Überträgt Sessions oder Patches an die Hardware mit automatischer Slot-64-Sicherheit und Read-Back-Verifikation.
+
 ---
 
 ## 🛠 Voraussetzungen & Installation
@@ -52,15 +62,16 @@ Repository clonen und Abhängigkeiten installieren:
 
 ## 🧪 Tests ausführen
 
-Das Projekt verfügt über 20 Unit- und Integrationstests, die alle Meilensteine ohne physische Hardware (über Mocks und In-Memory-Validierung) abdecken:
+Das Projekt verfügt über 31 Unit- und Integrationstests, die alle Meilensteine ohne physische Hardware (über Mocks und In-Memory-Validierung) vollständig abdecken:
 
-Befehl zum Ausführen aller Tests:
+Befehl zum Ausführen aller 31 Tests:
 - `uv run pytest`
 
 Ausgewählte Testbereiche gezielt ausführen:
 - Meilenstein 1 & Setup: `uv run pytest tests/test_setup.py tests/test_midi_detector.py`
 - Meilenstein 2: In-Memory Roundtrip & DSL-Compiler: `uv run pytest tests/test_core_roundtrip.py tests/test_dsl.py`
 - Meilenstein 3: FastAPI Server & WebSockets: `uv run pytest tests/test_bridge_server.py`
+- Meilenstein 4: MCP-Server & Batch-Tools: `uv run pytest tests/test_mcp_server.py`
 
 ---
 
@@ -74,16 +85,6 @@ Interaktive OpenAPI-Dokumentation (Swagger UI):
 
 ---
 
-## 💡 Beispiel: Pattern-DSL zu NCS kompilieren
+## 💡 Verwendung der MCP-Tools
 
-Verwendung in Python:
-- Importiere `FirmwareProfile` und `compile_dsl_to_ncs_bytes` aus `src.core.dsl`.
-- Definiere deine Polyrhythmen und Tracks deklarativ.
-- Erhalte fertige, im RAM validierte NCS-Bytes für den Hardware-Upload.
-
----
-
-## 🗺 Ausblick: Meilensteine 4 & 5
-
-- **Meilenstein 4**: Lokaler MCP-Server (`src/mcp/server.py`) zur KI-gestützten Komposition (`compose_pattern_batch`, `design_synth_patch`, `configure_mix_and_fx`, `hardware_sync`).
-- **Meilenstein 5**: Modernes Web-Frontend (React + Vite + Web Audio API) mit 4x8 Pad-Grid, interaktivem Microstep-Inspektor und bidirektionalem WebSocket-Sync zu Port 8770.
+Beispiel für den direkten Aufruf in Python:
