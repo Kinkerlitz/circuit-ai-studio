@@ -6,7 +6,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from src.bridge.server import SAFE_VERIFY_SLOT, app, bridge
-from src.core.wrapper import build_default_patch, get_template_path, patch_to_syx
+from src.core.wrapper import build_default_patch, get_template_path
 
 
 @pytest.fixture(autouse=True)
@@ -125,7 +125,6 @@ def test_session_upload_invalid_bytes():
 
 def test_patch_upload():
     patch_bytes = build_default_patch(name="BassInit", preset="bass")
-    syx_bytes = patch_to_syx(patch_bytes, synth=1)
 
     with TestClient(app) as client:
         response = client.post(
@@ -133,7 +132,7 @@ def test_patch_upload():
             json={
                 "synth": 1,
                 "slot": 5,
-                "patch_hex": syx_bytes.hex(),
+                "patch_hex": patch_bytes.hex(),
             },
         )
         assert response.status_code == 200
@@ -141,6 +140,7 @@ def test_patch_upload():
         assert data["status"] == "success"
         assert data["synth"] == 1
         assert data["slot"] == 5
+        assert data["bytes"] == 340
 
 
 def test_websocket_connection_and_broadcast():
