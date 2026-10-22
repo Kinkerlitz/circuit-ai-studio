@@ -16,7 +16,7 @@ from src.bridge.midi_detector import (
     get_midi_connection,
 )
 from src.core.validator import validate_ncs_roundtrip, validate_patch_roundtrip
-from src.core.wrapper import patch_to_syx, song_to_ncs_bytes
+from src.core.wrapper import song_to_ncs_bytes
 
 SAFE_VERIFY_SLOT = 64  # Dedicated slot 64 for safe write & read-back verification
 
@@ -81,7 +81,7 @@ class HardwareBridge:
             connected = bool(
                 getattr(
                     self.connection,
-                    "connected",
+                    "is_connected",
                     getattr(
                         self.connection,
                         "_connected",
@@ -95,16 +95,16 @@ class HardwareBridge:
             "port_name": port_name,
             "is_mock": is_mock,
             "detected_device": {
-                "detected": dev_status.detected,
-                "input_port": dev_status.input_port,
-                "output_port": dev_status.output_port,
+                "detected": dev_status.is_connected,
+                "input_port": dev_status.input_port_name,
+                "output_port": dev_status.port_name,
             },
         }
 
     async def broadcast(self, event_type: str, payload: dict[str, Any]) -> None:
         msg = {"type": event_type, "data": payload}
         disconnected: set[WebSocket] = set()
-        for ws in self.active_websockets:
+        for ws in list(self.active_websockets):
             try:
                 await ws.send_json(msg)
             except Exception:
@@ -119,7 +119,6 @@ class HardwareBridge:
 
         await self.broadcast("note_on", event.model_dump())
 
-        # Release note after duration
         async def _note_off() -> None:
             await asyncio.sleep(event.duration_s)
             async with self._lock:
@@ -157,7 +156,6 @@ class HardwareBridge:
         verify: bool = True,
     ) -> dict[str, Any]:
         """Validate offline in RAM, then transmit with Safe-Slot-64 Read-Back verification."""
-        # 1. Offline RAM validation
         validation = validate_ncs_roundtrip(ncs_bytes)
         if not validation.is_valid:
             raise ValueError(
@@ -191,6 +189,8 @@ class HardwareBridge:
         if not self.connection:
             raise RuntimeError("MIDI connection offline")
         if isinstance(self.connection, MockCircuitTracksConnection):
+            if not hasattr(self.connection, "state"):
+                self.connection.state = {}
             self.connection.state["slots"] = self.connection.state.get("slots", {})
             self.connection.state["slots"][slot] = ncs_bytes
 
@@ -198,7 +198,7 @@ class HardwareBridge:
         if not self.connection:
             return None
         if isinstance(self.connection, MockCircuitTracksConnection):
-            slots = self.connection.state.get("slots", {})
+            slots = getattr(self.connection, "state", {}).get("slots", {})
             return slots.get(slot)
         return None
 
@@ -208,7 +208,11 @@ class HardwareBridge:
         slot: int,
         patch_bytes: bytes,
     ) -> dict[str, Any]:
-        val = validate_patch_roundtrip(patch_bytes, synth=synth)
+        raw_patch = patch_bytes
+        if len(patch_bytes) == 349 and patch_bytes[0] == 0xF0 and patch_bytes[-1] == 0xF7:
+            raw_patch = patch_bytes[8:-1]
+
+        val = validate_patch_roundtrip(raw_patch, synth=synth)
         if not val.is_valid:
             raise ValueError(f"Offline patch validation failed: {', '.join(val.differences)}")
 
@@ -216,15 +220,17 @@ class HardwareBridge:
             if not self.connection:
                 raise RuntimeError("MIDI connection not initialized")
             if isinstance(self.connection, MockCircuitTracksConnection):
+                if not hasattr(self.connection, "state"):
+                    self.connection.state = {}
                 key = f"synth_{synth}_patches"
                 self.connection.state[key] = self.connection.state.get(key, {})
-                self.connection.state[key][slot] = patch_bytes
+                self.connection.state[key][slot] = raw_patch
 
         await self.broadcast(
             "patch_uploaded",
-            {"synth": synth, "slot": slot, "bytes": len(patch_bytes)},
+            {"synth": synth, "slot": slot, "bytes": len(raw_patch)},
         )
-        return {"synth": synth, "slot": slot, "status": "success", "bytes": len(patch_bytes)}
+        return {"synth": synth, "slot": slot, "status": "success", "bytes": len(raw_patch)}
 
 
 bridge = HardwareBridge()
@@ -327,7 +333,7 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
             msg = await websocket.receive_text()
             if msg == "ping":
                 await websocket.send_text("pong")
-    except WebSocketDisconnect:
+    except (WebSocketDisconnect, Exception):
         pass
     finally:
         bridge.active_websockets.discard(websocket)

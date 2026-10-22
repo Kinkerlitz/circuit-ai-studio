@@ -6,8 +6,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from src.bridge.server import SAFE_VERIFY_SLOT, app, bridge
-from src.core.dsl import compile_dsl_to_song
-from src.core.wrapper import build_default_patch, create_empty_ncs, patch_to_syx
+from src.core.wrapper import build_default_patch, get_template_path, patch_to_syx
 
 
 @pytest.fixture(autouse=True)
@@ -59,8 +58,7 @@ def test_midi_realtime_endpoint():
 
 
 def test_session_upload_safe_slot_64_verified():
-    empty_ncs = create_empty_ncs()
-    ncs_bytes = empty_ncs.data
+    ncs_bytes = get_template_path().read_bytes()
 
     with TestClient(app) as client:
         response = client.post(
@@ -80,7 +78,22 @@ def test_session_upload_safe_slot_64_verified():
 
 
 def test_session_upload_with_song_dict():
-    song_dict = compile_dsl_to_song({"name": "TestSession", "bpm": 124})
+    song_dict = {
+        "name": "TestTrip",
+        "bpm": 128,
+        "patterns": {
+            "pat1": {
+                "length": 16,
+                "tracks": {
+                    "synth1": {
+                        "steps": {
+                            "0": {"note": 60, "velocity": 100, "gate": 0.5},
+                        }
+                    }
+                },
+            }
+        },
+    }
 
     with TestClient(app) as client:
         response = client.post(
