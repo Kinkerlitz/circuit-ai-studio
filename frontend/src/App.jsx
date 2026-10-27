@@ -23,6 +23,7 @@ export default function App() {
   const [activeTrackId, setActiveTrackId] = useState('synth1');
   const [patternLength, setPatternLength] = useState(16);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [currentStep, setCurrentStep] = useState(0);
   const [macros, setMacros] = useState(Array(8).fill(64));
   
   // Master Controls
@@ -131,6 +132,23 @@ export default function App() {
       if (timer) clearTimeout(timer);
     };
   }, []);
+
+  // Sequencer Clock
+  useEffect(() => {
+    let intervalId;
+    if (isPlaying) {
+      const stepTimeMs = (60 / bpm / 4) * 1000;
+      intervalId = setInterval(() => {
+        setCurrentStep((prev) => (prev + 1) % patternLength);
+      }, stepTimeMs);
+    } else {
+      setCurrentStep(0);
+    }
+
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [isPlaying, bpm, patternLength]);
 
   const toggleStep = (stepIdx) => {
     if (stepIdx >= patternLength) return;
@@ -361,10 +379,11 @@ export default function App() {
                   {Array.from({ length: NUM_STEPS }).map((_, idx) => {
                     const isActive = grid[activeTrackId][idx];
                     const isAvailable = idx < patternLength;
+                    const isPlayhead = isPlaying && currentStep === idx;
                     return (
                       <button
                         key={`seq-${idx}`}
-                        className={`pad seq-pad ${activeTrackColor} ${isActive ? 'active' : ''} ${!isAvailable ? 'disabled' : ''}`}
+                        className={`pad seq-pad ${activeTrackColor} ${isActive ? 'active' : ''} ${!isAvailable ? 'disabled' : ''} ${isPlayhead ? 'current-playhead' : ''}`}
                         onClick={() => toggleStep(idx)}
                         disabled={!isAvailable}
                       />

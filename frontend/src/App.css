@@ -334,6 +334,18 @@ body {
 .pad.active.drum3 { background-color: var(--accent-magenta); box-shadow: 0 0 20px var(--accent-magenta); border-color: #fff; }
 .pad.active.drum4 { background-color: var(--accent-red); box-shadow: 0 0 20px var(--accent-red); border-color: #fff; }
 
+/* Playhead Styles */
+.pad.current-playhead {
+  border: 2px solid #ffffff;
+  box-shadow: 0 0 12px rgba(255, 255, 255, 0.8);
+  z-index: 2;
+}
+
+.pad.current-playhead.active {
+  filter: brightness(1.5);
+  box-shadow: 0 0 25px #ffffff, inset 0 0 10px rgba(255, 255, 255, 0.8);
+}
+
 .note-pad:active {
   background-color: #fff !important;
   box-shadow: 0 0 25px #fff !important;
