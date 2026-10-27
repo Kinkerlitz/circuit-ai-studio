@@ -1,0 +1,15 @@
+litz_kinker@cloudshell:~/circuit-ai-studio/frontend$ npm run dev -- --host
+
+startet den Web-Dienst/Host
+
+
+litz_kinker@cloudshell:~$ cd circuit-ai-studio/
+litz_kinker@cloudshell:~/circuit-ai-studio$ PYTHONPATH="vendor/circuit-tracks-tools/src:src:." uv run uvicorn src.bridge.server:app --host 0.0.0.0 --port 8770 --reload
+
+startet das python Grundgerüst
+
+git add frontend/src/App.jsx frontend/src/App.css
+git commit -m "feat: add animated sequencer playhead clock synced to bpm"
+git push origin main
+
+sichert das Projekt
