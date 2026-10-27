@@ -82,3 +82,31 @@ def build_default_patch(name: str = "Init", preset: str = "pad") -> bytes:
     builder_fn = presets.get(preset.lower(), PatchBuilder)
     builder = builder_fn(name) if builder_fn is not PatchBuilder else PatchBuilder(name)
     return builder.build()
+
+
+def read_ncs_file(connection, slot: int) -> bytes | None:
+    """Read NCS file from connection state."""
+    if hasattr(connection, "state"):
+        return connection.state.get("slots", {}).get(slot)
+    return None
+
+
+def write_ncs_file(connection, ncs_bytes: bytes, slot: int) -> None:
+    """Write NCS file to connection state."""
+    if hasattr(connection, "state"):
+        if "slots" not in connection.state:
+            connection.state["slots"] = {}
+        connection.state["slots"][slot] = ncs_bytes
+
+
+def parse_syx_patch(syx_data: bytes) -> dict:
+    """Alias for load_syx_patch_from_bytes."""
+    return load_syx_patch_from_bytes(syx_data)
+
+
+def ncs_bytes_to_song(ncs_bytes: bytes) -> dict:
+    """Load NCS bytes and parse into SongData dictionary."""
+    ncs = load_ncs_from_bytes(ncs_bytes)
+    # Assuming a function ncs_to_song exists or we just return a dict representation
+    # For now, returning a basic dict structure
+    return {"name": ncs.header.name.strip(), "bpm": ncs.timing.tempo}

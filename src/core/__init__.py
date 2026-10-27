@@ -16,8 +16,12 @@ from src.core.wrapper import (
     create_empty_ncs,
     load_ncs_from_bytes,
     load_syx_patch_from_bytes,
+    ncs_bytes_to_song,
+    parse_syx_patch,
     patch_to_syx,
+    read_ncs_file,
     song_to_ncs_bytes,
+    write_ncs_file,
 )
 
 __all__ = [
@@ -30,8 +34,12 @@ __all__ = [
     "create_empty_ncs",
     "load_ncs_from_bytes",
     "load_syx_patch_from_bytes",
+    "ncs_bytes_to_song",
+    "parse_syx_patch",
     "patch_to_syx",
+    "read_ncs_file",
     "song_to_ncs_bytes",
     "validate_ncs_roundtrip",
     "validate_patch_roundtrip",
+    "write_ncs_file",
 ]
