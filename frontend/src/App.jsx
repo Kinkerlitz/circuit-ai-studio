@@ -76,6 +76,7 @@ export default function App() {
   useEffect(() => {
     let ws;
     let timer;
+    let isMounted = true;
 
     const connectWs = () => {
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -85,12 +86,14 @@ export default function App() {
         ws = new WebSocket(wsUrl);
 
         ws.onopen = () => {
+          if (!isMounted) return;
           setWsConnected(true);
           setStatusMsg('Verbunden mit Bridge');
           addLog('WebSocket-Verbindung hergestellt');
         };
 
         ws.onmessage = (event) => {
+          if (!isMounted) return;
           try {
             const data = JSON.parse(event.data);
             addLog(`Event: ${data.type || 'msg'} ${JSON.stringify(data.data || {})}`);
@@ -100,15 +103,17 @@ export default function App() {
         };
 
         ws.onclose = () => {
+          if (!isMounted) return;
           setWsConnected(false);
           setStatusMsg('Getrennt. Neuer Versuch...');
           timer = setTimeout(connectWs, 3000);
         };
 
         ws.onerror = () => {
-          ws.close();
+          if (ws) ws.close();
         };
       } catch (err) {
+        if (!isMounted) return;
         setWsConnected(false);
         setStatusMsg('Bridge offline (Mock)');
         addLog(`WS Error: ${err.message}`);
@@ -116,8 +121,13 @@ export default function App() {
     };
 
     connectWs();
+    
     return () => {
-      if (ws) ws.close();
+      isMounted = false;
+      if (ws) {
+        ws.onclose = null; // Prevent reconnect timer from firing on unmount
+        ws.close();
+      }
       if (timer) clearTimeout(timer);
     };
   }, []);
@@ -209,8 +219,7 @@ export default function App() {
         }
       });
       compiledTracks[track.id] = {
-        length: patternLength,
-        steps,
+        steps, // Removed 'length' to comply with backend schema
       };
     });
 

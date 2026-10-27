@@ -7,7 +7,7 @@ from contextlib import asynccontextmanager
 from typing import Any, AsyncGenerator
 
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 from src.bridge.midi_detector import (
     MidiConnection,
@@ -22,6 +22,7 @@ SAFE_VERIFY_SLOT = 64  # Dedicated slot 64 for safe write & read-back verificati
 
 
 class NoteEvent(BaseModel):
+    model_config = ConfigDict(extra="ignore")
     channel: int = Field(..., ge=0, le=15)
     note: int = Field(..., ge=0, le=127)
     velocity: int = Field(100, ge=0, le=127)
@@ -29,16 +30,19 @@ class NoteEvent(BaseModel):
 
 
 class ControlChangeEvent(BaseModel):
+    model_config = ConfigDict(extra="ignore")
     channel: int = Field(..., ge=0, le=15)
     control: int = Field(..., ge=0, le=127)
     value: int = Field(..., ge=0, le=127)
 
 
 class RealtimeCommand(BaseModel):
+    model_config = ConfigDict(extra="ignore")
     command: str = Field(..., description="start, stop, continue, clock")
 
 
 class SessionUploadRequest(BaseModel):
+    model_config = ConfigDict(extra="ignore")
     slot: int = Field(..., ge=1, le=64)
     ncs_hex: str | None = None
     song_dict: dict[str, Any] | None = None
@@ -46,6 +50,7 @@ class SessionUploadRequest(BaseModel):
 
 
 class PatchUploadRequest(BaseModel):
+    model_config = ConfigDict(extra="ignore")
     synth: int = Field(..., ge=1, le=2)
     slot: int = Field(1, ge=1, le=64)
     patch_hex: str
