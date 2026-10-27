@@ -9,4 +9,4 @@ if [ ! -f "pyproject.toml" ]; then
     uv add --dev pytest pytest-asyncio httpx
 fi
 
-aider --model gemini/gemini-3.7-flash "$@"
+aider --read AGENT_SPEC.md src/core/wrapper.py src/core/__init__.py src/bridge/server.py tests/test_bridge_server.py
