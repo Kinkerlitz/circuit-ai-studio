@@ -65,9 +65,16 @@ Circuit Tracks AI Studio ist eine professionelle Entwicklungs- und Steuerungsumg
 
 ---
 
-## 🚀 Startanleitung (Getting Started / How to Run)
+## Startanleitung (Getting Started / How to Run)
 
-Diese Anleitung beschreibt, wie das Gesamtsystem (Backend und Frontend) gestartet wird. Dies ist besonders für Cloud Shell & Headless-Umgebungen relevant, da das System automatisch auf den Mock-Modus zurückfällt, wenn keine Hardware angeschlossen ist.
+Diese Anleitung beschreibt, wie das Gesamtsystem (FastAPI-Bridge und React-Frontend) gestartet wird. Dies ist besonders für Google Cloud Shell und Headless-Linux-Umgebungen relevant, da das System automatisch auf den Mock-Modus zurückfällt, wenn keine physische Circuit Tracks per USB angeschlossen ist.
+
+---
 
 ### Terminal 1 – FastAPI Bridge Server
-Startet den zentralen Hardware-Daemon (inkl. Mock-Fallback) auf Port 8770:
+
+Startet den zentralen Hardware-Daemon (inkl. automatischem Mock-Fallback) auf Port 8770:
+
+```bash
+cd ~/circuit-ai-studio
+PYTHONPATH="vendor/circuit-tracks-tools/src:src:." uv run uvicorn src.bridge.server:app --host 0.0.0.0 --port 8770 --reload
