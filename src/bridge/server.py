@@ -322,7 +322,7 @@ async def upload_session(req: SessionUploadRequest) -> dict[str, Any]:
         if req.ncs_hex:
             ncs_bytes = bytes.fromhex(req.ncs_hex)
         elif req.song_dict is not None:
-            song_data = req.song_dict.model_dump() if hasattr(req.song_dict, "model_dump") else req.song_dict
+            song_data = req.song_dict.model_dump(exclude_none=True) if hasattr(req.song_dict, "model_dump") else req.song_dict
             ncs_bytes = song_to_ncs_bytes(song_data)
         else:
             raise HTTPException(
