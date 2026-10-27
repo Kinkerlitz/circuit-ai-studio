@@ -17,7 +17,7 @@ const NUM_NOTE_PADS = 16;
 
 export default function App() {
   const [wsConnected, setWsConnected] = useState(false);
-  const [statusMsg, setStatusMsg] = useState('Verbinde zu Bridge auf Port 8770...');
+  const [statusMsg, setStatusMsg] = useState('Verbinde zu Bridge...');
   const [logs, setLogs] = useState([]);
   
   const [activeTrackId, setActiveTrackId] = useState('synth1');
@@ -78,33 +78,41 @@ export default function App() {
     let timer;
 
     const connectWs = () => {
-      const wsUrl = `ws://${window.location.hostname}:8770/ws`;
-      ws = new WebSocket(wsUrl);
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const wsUrl = `${protocol}//${window.location.host}/ws`;
 
-      ws.onopen = () => {
-        setWsConnected(true);
-        setStatusMsg('Verbunden mit Port 8770');
-        addLog('WebSocket-Verbindung hergestellt');
-      };
+      try {
+        ws = new WebSocket(wsUrl);
 
-      ws.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          addLog(`Event: ${data.type || 'msg'} ${JSON.stringify(data.data || {})}`);
-        } catch {
-          addLog(`WS: ${event.data}`);
-        }
-      };
+        ws.onopen = () => {
+          setWsConnected(true);
+          setStatusMsg('Verbunden mit Bridge');
+          addLog('WebSocket-Verbindung hergestellt');
+        };
 
-      ws.onclose = () => {
+        ws.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            addLog(`Event: ${data.type || 'msg'} ${JSON.stringify(data.data || {})}`);
+          } catch {
+            addLog(`WS: ${event.data}`);
+          }
+        };
+
+        ws.onclose = () => {
+          setWsConnected(false);
+          setStatusMsg('Getrennt. Neuer Versuch...');
+          timer = setTimeout(connectWs, 3000);
+        };
+
+        ws.onerror = () => {
+          ws.close();
+        };
+      } catch (err) {
         setWsConnected(false);
-        setStatusMsg('Getrennt. Neuer Versuch...');
-        timer = setTimeout(connectWs, 3000);
-      };
-
-      ws.onerror = () => {
-        ws.close();
-      };
+        setStatusMsg('Bridge offline (Mock)');
+        addLog(`WS Error: ${err.message}`);
+      }
     };
 
     connectWs();
@@ -133,7 +141,7 @@ export default function App() {
     playWebAudioTone(freq);
 
     try {
-      await fetch('http://localhost:8770/midi/note', {
+      await fetch('/midi/note', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -151,7 +159,7 @@ export default function App() {
   const handleTransport = async (cmd) => {
     setIsPlaying(cmd === 'start' || cmd === 'continue');
     try {
-      await fetch('http://localhost:8770/midi/realtime', {
+      await fetch('/midi/realtime', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ command: cmd }),
@@ -170,7 +178,7 @@ export default function App() {
     if (!track) return;
     
     try {
-      await fetch('http://localhost:8770/midi/cc', {
+      await fetch('/midi/cc', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -217,7 +225,7 @@ export default function App() {
     };
 
     try {
-      const response = await fetch('http://localhost:8770/session/upload', {
+      const response = await fetch('/session/upload', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -378,7 +386,7 @@ export default function App() {
             <h2>AI STUDIO WORKSPACE</h2>
             <div className={`badge ${wsConnected ? 'connected' : 'disconnected'}`}>
               <span style={{ fontSize: '10px' }}>●</span>
-              {wsConnected ? 'PORT 8770 ONLINE' : 'BRIDGE OFFLINE'}
+              {wsConnected ? 'BRIDGE ONLINE' : 'BRIDGE OFFLINE'}
             </div>
           </div>
 
