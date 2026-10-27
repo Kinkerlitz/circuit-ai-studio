@@ -23,6 +23,7 @@ SAFE_VERIFY_SLOT = 64  # Dedicated slot 64 for safe write & read-back verificati
 
 class StepSchema(BaseModel):
     model_config = ConfigDict(extra="allow")
+    index: int | None = None
     note: int | None = None
     velocity: int = 100
     gate: float = 0.5
@@ -31,19 +32,20 @@ class StepSchema(BaseModel):
 
 class TrackSchema(BaseModel):
     model_config = ConfigDict(extra="allow")
-    steps: dict[str, StepSchema] = Field(default_factory=dict)
+    steps: Any = Field(default_factory=dict)
 
 
 class PatternSchema(BaseModel):
     model_config = ConfigDict(extra="allow")
     length: int = 16
     tracks: dict[str, TrackSchema] = Field(default_factory=dict)
+    steps: Any = Field(default_factory=list)
 
 
 class SongSchema(BaseModel):
     model_config = ConfigDict(extra="allow")
     name: str | None = None
-    bpm: float | None = None
+    bpm: float | int | None = None
     patterns: dict[str, PatternSchema] = Field(default_factory=dict)
 
 
