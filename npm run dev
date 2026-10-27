@@ -1,0 +1,4 @@
+Das Frontend ist standardmäßig unter `http://localhost:5173` erreichbar und verbindet sich automatisch mit dem Bridge Server auf Port 8770.
+
+### Terminal 3 – Tests ausführen (Optional)
+Um die Test-Suite auszuführen und sicherzustellen, dass alle 41 Tests grün sind:

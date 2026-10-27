@@ -4,7 +4,7 @@ Circuit Tracks AI Studio ist eine professionelle Entwicklungs- und Steuerungsumg
 
 ---
 
-## 🚀 Projektstatus (Meilensteine 1–5 abgeschlossen)
+## 🚀 Projektstatus (Meilensteine 1–6 abgeschlossen)
 
 ### ✅ Meilenstein 1: Basis-Setup & CoreMIDI-Detektor
 - **CoreMIDI-Hardwareerkennung** (`src/bridge/midi_detector.py`): Automatische Erkennung von USB-Circuit-Tracks-Ports für MIDI-In und Out.
@@ -56,10 +56,18 @@ Circuit Tracks AI Studio ist eine professionelle Entwicklungs- und Steuerungsumg
   - "Push to Slot 64"-Funktion für nahtlose Übertragung ins Scratchpad des Circuit Tracks.
   - Web Audio API Sound-Vorschau beim Antippen der Pads.
 
+### ✅ Meilenstein 6: Frontend & Bridge (End-to-End)
+- **Vollständige End-to-End-Pipeline**: React Hardware Deck (Circuit Tracks Nachbildung) <-> FastAPI Bridge Server <-> In-Memory Core & SysEx Validator.
+- **Test-Abdeckung**: 41/41 Pytest-Tests grün.
+- **Sichere Übertragung & Verifikation**: Uploads auf Safe Slot 64 (exakt 160.780 Bytes) mit Read-Back-Verifikation.
+- **Taktgenaues Lauflicht**: Playhead Clock synchronisiert mit BPM für visuelles Feedback im Frontend.
+- **Live-Monitor & Schema**: Integrierter WebSocket-Live-Monitor und flexibles Step-/Pattern-Schema für komplexe Sequenzen.
+
 ---
 
-## 🖥 Interaktives Terminal-Studio (`studio_cli.py`)
+## 🚀 Startanleitung (Getting Started / How to Run)
 
-Das Projekt beinhaltet eine interaktive Konsole mit ANSI-Farbdarstellung und nicht-blockierender Tastaturabfrage zur einfachen Bedienung und Inspektion:
+Diese Anleitung beschreibt, wie das Gesamtsystem (Backend und Frontend) gestartet wird. Dies ist besonders für Cloud Shell & Headless-Umgebungen relevant, da das System automatisch auf den Mock-Modus zurückfällt, wenn keine Hardware angeschlossen ist.
 
-Starten über:
+### Terminal 1 – FastAPI Bridge Server
+Startet den zentralen Hardware-Daemon (inkl. Mock-Fallback) auf Port 8770:

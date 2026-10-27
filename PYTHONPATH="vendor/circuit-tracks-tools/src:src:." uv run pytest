@@ -1,0 +1,8 @@
+
+---
+
+## 🖥 Interaktives Terminal-Studio (`studio_cli.py`)
+
+Das Projekt beinhaltet eine interaktive Konsole mit ANSI-Farbdarstellung und nicht-blockierender Tastaturabfrage zur einfachen Bedienung und Inspektion:
+
+Starten über:
