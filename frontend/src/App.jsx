@@ -2,14 +2,14 @@ import React, { useState, useEffect, useRef } from 'react';
 import './App.css';
 
 const TRACKS = [
-  { id: 'synth1', name: 'Synth 1', color: 'synth1', channel: 0, defaultNote: 60 },
-  { id: 'synth2', name: 'Synth 2', color: 'synth2', channel: 1, defaultNote: 64 },
-  { id: 'midi1', name: 'MIDI 1', color: 'midi1', channel: 2, defaultNote: 60 },
-  { id: 'midi2', name: 'MIDI 2', color: 'midi2', channel: 3, defaultNote: 60 },
-  { id: 'drum1', name: 'Drum 1', color: 'drum1', channel: 9, defaultNote: 60 },
-  { id: 'drum2', name: 'Drum 2', color: 'drum2', channel: 9, defaultNote: 62 },
-  { id: 'drum3', name: 'Drum 3', color: 'drum3', channel: 9, defaultNote: 64 },
-  { id: 'drum4', name: 'Drum 4', color: 'drum4', channel: 9, defaultNote: 65 },
+  { id: 'synth1', name: 'Synth 1', color: 'synth1', hex: '#00d2d3', channel: 0, defaultNote: 60 },
+  { id: 'synth2', name: 'Synth 2', color: 'synth2', hex: '#54a0ff', channel: 1, defaultNote: 64 },
+  { id: 'midi1', name: 'MIDI 1', color: 'midi1', hex: '#a29bfe', channel: 2, defaultNote: 60 },
+  { id: 'midi2', name: 'MIDI 2', color: 'midi2', hex: '#6c5ce7', channel: 3, defaultNote: 60 },
+  { id: 'drum1', name: 'Drum 1', color: 'drum1', hex: '#feca57', channel: 9, defaultNote: 60 },
+  { id: 'drum2', name: 'Drum 2', color: 'drum2', hex: '#ff9f43', channel: 9, defaultNote: 62 },
+  { id: 'drum3', name: 'Drum 3', color: 'drum3', hex: '#ff9ff3', channel: 9, defaultNote: 64 },
+  { id: 'drum4', name: 'Drum 4', color: 'drum4', hex: '#ff6b6b', channel: 9, defaultNote: 65 },
 ];
 
 const NUM_STEPS = 16;
@@ -24,6 +24,12 @@ export default function App() {
   const [patternLength, setPatternLength] = useState(16);
   const [isPlaying, setIsPlaying] = useState(false);
   const [macros, setMacros] = useState(Array(8).fill(64));
+  
+  // Master Controls
+  const [masterVol, setMasterVol] = useState(100);
+  const [masterFilter, setMasterFilter] = useState(64);
+  const [bpm, setBpm] = useState(120);
+  const [swing, setSwing] = useState(50);
   
   const [grid, setGrid] = useState(() => {
     const initialGrid = {};
@@ -202,7 +208,7 @@ export default function App() {
 
     const songPayload = {
       name: 'Slot64Push',
-      bpm: 124,
+      bpm: bpm,
       patterns: {
         p1: {
           tracks: compiledTracks,
@@ -248,89 +254,125 @@ export default function App() {
     setPrompt('');
   };
 
-  const activeTrackColor = TRACKS.find(t => t.id === activeTrackId)?.color || 'synth1';
+  const activeTrack = TRACKS.find(t => t.id === activeTrackId);
+  const activeTrackColor = activeTrack?.color || 'synth1';
+  const activeTrackHex = activeTrack?.hex || '#00d2d3';
 
   return (
     <div className="app-container">
       <div className="split-layout">
         
-        {/* LEFT: HARDWARE DECK */}
+        {/* LEFT: HARDWARE DECK (65%) */}
         <div className="hardware-deck">
-          <div className="deck-header">
-            <h2>CIRCUIT TRACKS</h2>
-            <div className="transport-controls">
-              <button className={`btn-transport ${isPlaying ? 'active' : ''}`} onClick={() => handleTransport('start')}>▶</button>
-              <button className="btn-transport" onClick={() => handleTransport('stop')}>■</button>
-            </div>
-          </div>
-
-          <div className="macros-section">
-            {macros.map((val, idx) => (
-              <div key={idx} className="macro-knob-container">
-                <input 
-                  type="range" 
-                  min="0" max="127" 
-                  value={val} 
-                  onChange={(e) => handleMacroChange(idx, parseInt(e.target.value))}
-                  className={`macro-slider ${activeTrackColor}`}
-                />
-                <div className="macro-label">M{idx + 1}</div>
+          <div className="hardware-chassis">
+            
+            {/* Top Section: Master & Macros */}
+            <div className="deck-top-section">
+              <div className="master-controls">
+                <div className="knob-group">
+                  <div className="knob-label">Master Vol</div>
+                  <input type="range" min="0" max="127" value={masterVol} onChange={e => setMasterVol(e.target.value)} className="master-knob" />
+                </div>
+                <div className="knob-group">
+                  <div className="knob-label">Master Filter</div>
+                  <input type="range" min="0" max="127" value={masterFilter} onChange={e => setMasterFilter(e.target.value)} className="master-knob filter-knob" />
+                </div>
+                <div className="bpm-display">
+                  <div className="bpm-value">{bpm} BPM</div>
+                  <div className="bpm-controls">
+                    <button onClick={() => setBpm(b => b + 1)}>▲</button>
+                    <button onClick={() => setBpm(b => b - 1)}>▼</button>
+                  </div>
+                </div>
+                <div className="knob-group">
+                  <div className="knob-label">Swing</div>
+                  <input type="range" min="0" max="100" value={swing} onChange={e => setSwing(e.target.value)} className="master-knob" />
+                </div>
               </div>
-            ))}
-          </div>
 
-          <div className="track-selector">
-            {TRACKS.map(track => (
-              <button 
-                key={track.id}
-                className={`track-btn ${track.color} ${activeTrackId === track.id ? 'active' : ''}`}
-                onClick={() => setActiveTrackId(track.id)}
-              >
-                {track.name}
-              </button>
-            ))}
-          </div>
-
-          <div className="pads-section">
-            <div className="pads-label">Sequencer (Steps 1-16)</div>
-            <div className="pads-grid sequencer-grid">
-              {Array.from({ length: NUM_STEPS }).map((_, idx) => {
-                const isActive = grid[activeTrackId][idx];
-                const isAvailable = idx < patternLength;
-                return (
-                  <button
-                    key={`seq-${idx}`}
-                    className={`pad seq-pad ${activeTrackColor} ${isActive ? 'active' : ''} ${!isAvailable ? 'disabled' : ''}`}
-                    onClick={() => toggleStep(idx)}
-                    disabled={!isAvailable}
-                  />
-                );
-              })}
+              <div className="macros-grid">
+                {macros.map((val, idx) => (
+                  <div key={idx} className="macro-knob-container">
+                    <div className="macro-ring" style={{ borderColor: activeTrackHex, opacity: val / 127 + 0.2 }}></div>
+                    <input 
+                      type="range" 
+                      min="0" max="127" 
+                      value={val} 
+                      onChange={(e) => handleMacroChange(idx, parseInt(e.target.value))}
+                      className="macro-slider"
+                    />
+                    <div className="macro-label">Macro {idx + 1}</div>
+                  </div>
+                ))}
+              </div>
             </div>
 
-            <div className="pads-label" style={{marginTop: '16px'}}>Note / Drum Triggers</div>
-            <div className="pads-grid note-grid">
-              {Array.from({ length: NUM_NOTE_PADS }).map((_, idx) => (
-                <button
-                  key={`note-${idx}`}
-                  className={`pad note-pad ${activeTrackColor}`}
-                  onMouseDown={() => playNotePad(idx)}
-                />
+            {/* Middle Section: Track Selector */}
+            <div className="track-selector">
+              {TRACKS.map(track => (
+                <button 
+                  key={track.id}
+                  className={`track-btn ${track.color} ${activeTrackId === track.id ? 'active' : ''}`}
+                  onClick={() => setActiveTrackId(track.id)}
+                >
+                  {track.name}
+                </button>
               ))}
             </div>
-          </div>
-          
-          <div className="pattern-length-selector">
-            <span>Length: {patternLength}</span>
-            <input 
-              type="range" min="1" max="32" 
-              value={patternLength} 
-              onChange={(e) => setPatternLength(parseInt(e.target.value))}
-            />
+
+            {/* Bottom Section: 32-Pad Matrix & Transport */}
+            <div className="deck-bottom-section">
+              <div className="transport-sidebar">
+                <button className={`btn-transport play ${isPlaying ? 'active' : ''}`} onClick={() => handleTransport('start')}>▶</button>
+                <button className="btn-transport stop" onClick={() => handleTransport('stop')}>■</button>
+                
+                <div className="pattern-length-control">
+                  <div className="length-label">Length: {patternLength}</div>
+                  <input 
+                    type="range" min="1" max="32" 
+                    value={patternLength} 
+                    onChange={(e) => setPatternLength(parseInt(e.target.value))}
+                    className="length-slider"
+                  />
+                </div>
+              </div>
+
+              <div className="pad-matrix">
+                {/* Rows 1 & 2: Sequencer */}
+                <div className="matrix-section-label">Sequencer</div>
+                <div className="pads-grid">
+                  {Array.from({ length: NUM_STEPS }).map((_, idx) => {
+                    const isActive = grid[activeTrackId][idx];
+                    const isAvailable = idx < patternLength;
+                    return (
+                      <button
+                        key={`seq-${idx}`}
+                        className={`pad seq-pad ${activeTrackColor} ${isActive ? 'active' : ''} ${!isAvailable ? 'disabled' : ''}`}
+                        onClick={() => toggleStep(idx)}
+                        disabled={!isAvailable}
+                      />
+                    );
+                  })}
+                </div>
+
+                {/* Rows 3 & 4: Notes / Triggers */}
+                <div className="matrix-section-label" style={{marginTop: '12px'}}>Notes / Triggers</div>
+                <div className="pads-grid">
+                  {Array.from({ length: NUM_NOTE_PADS }).map((_, idx) => (
+                    <button
+                      key={`note-${idx}`}
+                      className={`pad note-pad ${activeTrackColor}`}
+                      onMouseDown={() => playNotePad(idx)}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+
           </div>
         </div>
 
-        {/* RIGHT: AI STUDIO PANEL */}
+        {/* RIGHT: AI STUDIO PANEL (35%) */}
         <div className="ai-studio-panel">
           <div className="panel-header">
             <h2>AI STUDIO WORKSPACE</h2>
@@ -347,15 +389,15 @@ export default function App() {
                 type="text" 
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
-                placeholder="z.B. Generiere düstere Acid-Bassline in A-Moll..."
+                placeholder="z.B. Acid Bassline in Am..."
                 onKeyDown={(e) => e.key === 'Enter' && handlePromptSubmit()}
               />
-              <button onClick={handlePromptSubmit}>Senden</button>
+              <button onClick={handlePromptSubmit}>Generate</button>
             </div>
           </div>
 
           <div className="agent-inspect-section">
-            <h3>Status &amp; Inspect Widget</h3>
+            <h3>DSL / Pattern Inspector</h3>
             <pre className="inspect-box">
               {agentOutput}
             </pre>
