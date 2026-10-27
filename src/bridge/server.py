@@ -21,6 +21,32 @@ from src.core.wrapper import song_to_ncs_bytes
 SAFE_VERIFY_SLOT = 64  # Dedicated slot 64 for safe write & read-back verification
 
 
+class StepSchema(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    note: int | None = None
+    velocity: int = 100
+    gate: float = 0.5
+    active: bool = True
+
+
+class TrackSchema(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    steps: dict[str, StepSchema] = Field(default_factory=dict)
+
+
+class PatternSchema(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    length: int = 16
+    tracks: dict[str, TrackSchema] = Field(default_factory=dict)
+
+
+class SongSchema(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    name: str | None = None
+    bpm: float | None = None
+    patterns: dict[str, PatternSchema] = Field(default_factory=dict)
+
+
 class NoteEvent(BaseModel):
     model_config = ConfigDict(extra="ignore")
     channel: int = Field(..., ge=0, le=15)
@@ -45,7 +71,7 @@ class SessionUploadRequest(BaseModel):
     model_config = ConfigDict(extra="ignore")
     slot: int = Field(..., ge=1, le=64)
     ncs_hex: str | None = None
-    song_dict: dict[str, Any] | None = None
+    song_dict: SongSchema | dict[str, Any] | None = None
     verify: bool = True
 
 
@@ -296,7 +322,8 @@ async def upload_session(req: SessionUploadRequest) -> dict[str, Any]:
         if req.ncs_hex:
             ncs_bytes = bytes.fromhex(req.ncs_hex)
         elif req.song_dict is not None:
-            ncs_bytes = song_to_ncs_bytes(req.song_dict)
+            song_data = req.song_dict.model_dump() if hasattr(req.song_dict, "model_dump") else req.song_dict
+            ncs_bytes = song_to_ncs_bytes(song_data)
         else:
             raise HTTPException(
                 status_code=400,
