@@ -355,7 +355,7 @@ export default function App() {
           </div>
 
           <div className="agent-inspect-section">
-            <h3>Status & Inspect Widget</h3>
+            <h3>Status &amp; Inspect Widget</h3>
             <pre className="inspect-box">
               {agentOutput}
             </pre>
