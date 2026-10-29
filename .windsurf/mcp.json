@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "circuit-tracks": {
+      "command": "./start_mcp.sh",
+      "args": [],
+      "env": {}
+    }
+  }
+}

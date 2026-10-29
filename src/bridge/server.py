@@ -3,11 +3,19 @@
 from __future__ import annotations
 
 import asyncio
+import json
+import os
 from contextlib import asynccontextmanager
 from typing import Any, AsyncGenerator
 
+import httpx
+from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, ConfigDict
+
+# Load environment variables from .env file
+load_dotenv()
 
 from src.bridge.midi_detector import (
     MidiConnection,
@@ -19,6 +27,10 @@ from src.core.validator import validate_ncs_roundtrip, validate_patch_roundtrip
 from src.core.wrapper import song_to_ncs_bytes
 
 SAFE_VERIFY_SLOT = 64  # Dedicated slot 64 for safe write & read-back verification
+
+# LLM Configuration (Google Gemini)
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
+LLM_MODEL = os.getenv("LLM_MODEL", "gemini-1.5-flash")
 
 
 class StepSchema(BaseModel):
@@ -82,6 +94,13 @@ class PatchUploadRequest(BaseModel):
     synth: int = Field(..., ge=1, le=2)
     slot: int = Field(1, ge=1, le=64)
     patch_hex: str
+
+
+class AgentPromptRequest(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    prompt: str = Field(..., min_length=1, max_length=500)
+    style: str = Field(default="acid", max_length=50)
+    key: str = Field(default="A minor", max_length=20)
 
 
 class HardwareBridge:
@@ -285,6 +304,15 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# Add CORS middleware to allow frontend requests
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 @app.get("/status")
 def get_status() -> dict[str, Any]:
@@ -358,6 +386,79 @@ async def upload_patch(req: PatchUploadRequest) -> dict[str, Any]:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+
+@app.post("/api/agent")
+async def agent_prompt(req: AgentPromptRequest) -> dict[str, Any]:
+    """Generate a pattern using Google Gemini LLM."""
+    if not GOOGLE_API_KEY:
+        raise HTTPException(
+            status_code=500,
+            detail="GOOGLE_API_KEY not configured. Add it to .env file."
+        )
+    
+    try:
+        from google import genai
+        from google.genai import types
+        
+        # Configure Gemini client
+        client = genai.Client(api_key=GOOGLE_API_KEY)
+        
+        # Build prompt for LLM
+        system_prompt = """You are a music pattern generator for Novation Circuit Tracks.
+Generate a JSON pattern based on the user's prompt.
+Return ONLY valid JSON with this structure:
+{
+  "pattern": {
+    "name": "pattern_name",
+    "length": 16,
+    "tracks": {
+      "synth1": {"steps": [{"index": 0, "note": 60, "velocity": 100, "gate": 0.5}]},
+      "drum1": {"steps": [{"index": 0, "note": 60, "velocity": 100}]}
+    }
+  }
+}
+Use MIDI notes 60-72 for synth, 60 for drums. Keep it simple and musical."""
+
+        user_prompt = f"Style: {req.style}, Key: {req.key}\nPrompt: {req.prompt}"
+        full_prompt = f"{system_prompt}\n\n{user_prompt}"
+
+        # Call Gemini API
+        response = await asyncio.to_thread(
+            client.models.generate_content,
+            model=LLM_MODEL,
+            contents=full_prompt,
+            config=types.GenerateContentConfig(
+                temperature=0.7,
+                max_output_tokens=500,
+            )
+        )
+        
+        content = response.text
+        
+        # Try to parse JSON from response
+        try:
+            # Find JSON in response (might be wrapped in markdown)
+            json_start = content.find("{")
+            json_end = content.rfind("}") + 1
+            if json_start >= 0 and json_end > json_start:
+                json_str = content[json_start:json_end]
+                pattern_data = json.loads(json_str)
+            else:
+                pattern_data = {"raw_response": content}
+        except json.JSONDecodeError:
+            pattern_data = {"raw_response": content}
+
+        return {
+            "status": "success",
+            "pattern": pattern_data.get("pattern", pattern_data),
+            "llm_response": content,
+            "model": LLM_MODEL,
+            "tokens_used": response.usage_metadata.total_token_count if hasattr(response, 'usage_metadata') else 0
+        }
+
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Gemini API error: {str(exc)}") from exc
 
 
 @app.websocket("/ws")

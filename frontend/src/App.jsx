@@ -275,17 +275,45 @@ export default function App() {
     }
   };
 
-  const handlePromptSubmit = () => {
+  const handlePromptSubmit = async () => {
+    if (!prompt.trim()) return;
+    
     addLog(`Agent Prompt: ${prompt}`);
-    setAgentOutput(JSON.stringify({
-      action: "generate_pattern",
-      parameters: {
-        style: "acid",
-        key: "A minor",
-        prompt: prompt
-      },
-      status: "mocked_response"
-    }, null, 2));
+    setAgentOutput(JSON.stringify({ status: "calling_llm..." }, null, 2));
+    
+    try {
+      const response = await fetch('http://localhost:8770/api/agent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prompt: prompt,
+          style: 'acid',
+          key: 'A minor'
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      setAgentOutput(JSON.stringify(data, null, 2));
+      addLog(`✔ LLM response received (${data.tokens_used} tokens)`);
+      
+      // If pattern was generated, show it
+      if (data.pattern) {
+        addLog(`Pattern generated: ${data.pattern.name || 'unnamed'}`);
+      }
+      
+    } catch (err) {
+      addLog(`✘ LLM error: ${err.message}`);
+      setAgentOutput(JSON.stringify({
+        status: "error",
+        error: err.message,
+        hint: "Check if backend is running on port 8770"
+      }, null, 2));
+    }
+    
     setPrompt('');
   };
 

@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "circuit-tracks": {
+      "command": "/home/kai/circuit-ai-studio/start_mcp.sh",
+      "args": [],
+      "env": {}
+    }
+  }
+}
