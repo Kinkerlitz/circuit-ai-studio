@@ -611,13 +611,17 @@ export default function App() {
                 {/* Rows 3 & 4: Notes / Triggers */}
                 <div className="matrix-section-label" style={{marginTop: '12px'}}>Notes / Triggers</div>
                 <div className="pads-grid">
-                  {Array.from({ length: NUM_NOTE_PADS }).map((_, idx) => (
-                    <button
-                      key={`note-${idx}`}
-                      className={`pad note-pad ${activeTrackColor}`}
-                      onMouseDown={() => playNotePad(idx)}
-                    />
-                  ))}
+                  {Array.from({ length: NUM_NOTE_PADS }).map((_, idx) => {
+                    // Check if current step has a note for active track
+                    const hasActiveNote = isPlaying && grid[activeTrackId][currentStep];
+                    return (
+                      <button
+                        key={`note-${idx}`}
+                        className={`pad note-pad ${activeTrackColor} ${hasActiveNote ? 'active current-playhead' : ''}`}
+                        onMouseDown={() => playNotePad(idx)}
+                      />
+                    );
+                  })}
                 </div>
               </div>
             </div>
