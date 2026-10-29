@@ -351,6 +351,53 @@ body {
   box-shadow: 0 0 25px #fff !important;
 }
 
+/* Circuit Tracks Hardware-Style Sequencer Colors */
+.seq-idle {
+  background-color: #4a5568; /* pale blue/gray - idle step */
+  border-color: #2d3748;
+}
+
+.seq-active {
+  background-color: #54a0ff; /* bright blue - active step */
+  box-shadow: 0 0 15px rgba(84, 160, 255, 0.5);
+  border-color: #fff;
+}
+
+.seq-playhead {
+  background-color: #ffffff; /* white - playhead on empty step */
+  box-shadow: 0 0 25px #ffffff, inset 0 0 10px rgba(255, 255, 255, 0.8);
+  border-color: #fff;
+  z-index: 2;
+}
+
+.seq-playhead-active {
+  background-color: #ffffff; /* white - playhead on active step */
+  box-shadow: 0 0 30px #ffffff, inset 0 0 15px rgba(255, 255, 255, 0.9);
+  border-color: #fff;
+  z-index: 2;
+  animation: pulse-white 0.1s ease-out;
+}
+
+@keyframes pulse-white {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+/* Note pad trigger flash - white when triggered */
+.note-triggered {
+  background-color: #ffffff !important;
+  box-shadow: 0 0 30px #ffffff !important;
+  border-color: #fff !important;
+  animation: flash-note 0.15s ease-out;
+}
+
+@keyframes flash-note {
+  0% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.1); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
 /* --- AI STUDIO PANEL (RIGHT 35%) --- */
 .ai-studio-panel {
   background-color: var(--panel-bg);

@@ -541,10 +541,17 @@ export default function App() {
                     const isActive = grid[activeTrackId][idx];
                     const isAvailable = idx < patternLength;
                     const isPlayhead = isPlaying && currentStep === idx;
+                    
+                    // Circuit Tracks style: pale blue steps, white playhead
+                    let padColor = 'seq-idle'; // pale blue (idle step)
+                    if (isActive) padColor = 'seq-active'; // bright blue (active step)
+                    if (isPlayhead && isActive) padColor = 'seq-playhead-active'; // white (playhead on active)
+                    else if (isPlayhead) padColor = 'seq-playhead'; // white (playhead on empty)
+                    
                     return (
                       <button
                         key={`seq-${idx}`}
-                        className={`pad seq-pad ${activeTrackColor} ${isActive ? 'active' : ''} ${!isAvailable ? 'disabled' : ''} ${isPlayhead ? 'current-playhead' : ''}`}
+                        className={`pad seq-pad ${padColor} ${!isAvailable ? 'disabled' : ''}`}
                         onClick={() => toggleStep(idx)}
                         disabled={!isAvailable}
                       />
@@ -614,10 +621,14 @@ export default function App() {
                   {Array.from({ length: NUM_NOTE_PADS }).map((_, idx) => {
                     // Check if current step has a note for active track
                     const hasActiveNote = isPlaying && grid[activeTrackId][currentStep];
+                    
+                    // Circuit Tracks style: flash white when triggered
+                    const triggerClass = hasActiveNote ? 'note-triggered' : '';
+                    
                     return (
                       <button
                         key={`note-${idx}`}
-                        className={`pad note-pad ${activeTrackColor} ${hasActiveNote ? 'active current-playhead' : ''}`}
+                        className={`pad note-pad ${activeTrackColor} ${triggerClass}`}
                         onMouseDown={() => playNotePad(idx)}
                       />
                     );
