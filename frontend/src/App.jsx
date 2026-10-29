@@ -43,6 +43,7 @@ export default function App() {
   const [prompt, setPrompt] = useState('');
   const [agentOutput, setAgentOutput] = useState('{\n  "status": "waiting for prompt..."\n}');
   const [isPushing, setIsPushing] = useState(false);
+  const [noteValues, setNoteValues] = useState({});
 
   const audioCtxRef = useRef(null);
 
@@ -337,6 +338,12 @@ export default function App() {
         newGrid[t.id] = Array(NUM_STEPS).fill(false);
       });
       
+      // Store note values for display
+      const noteValues = {};
+      TRACKS.forEach(t => {
+        noteValues[t.id] = Array(NUM_STEPS).fill(null);
+      });
+      
       // Convert pattern tracks to grid
       for (const [trackName, trackData] of Object.entries(pattern.tracks)) {
         const trackId = trackName.toLowerCase();
@@ -346,11 +353,13 @@ export default function App() {
             const idx = step.index;
             if (idx >= 0 && idx < NUM_STEPS) {
               newGrid[trackId][idx] = true;
+              noteValues[trackId][idx] = step.note;
             }
           });
         }
       }
       setGrid(newGrid);
+      setNoteValues(noteValues);
       
       // Initialize audio context
       if (!audioCtxRef.current) {
@@ -578,23 +587,7 @@ export default function App() {
                       const hasNote = grid[track.id][currentStep];
                       if (!hasNote) return null;
                       
-                      // Find note value from agentOutput pattern
-                      let noteValue = '-';
-                      try {
-                        const output = JSON.parse(agentOutput);
-                        const pattern = output.pattern;
-                        if (pattern && pattern.tracks) {
-                          const trackData = pattern.tracks[track.id] || pattern.tracks[track.id.toUpperCase()];
-                          if (trackData) {
-                            const step = trackData.steps.find(s => s.index === currentStep);
-                            if (step) {
-                              noteValue = step.note;
-                            }
-                          }
-                        }
-                      } catch (e) {
-                        // Ignore parse errors
-                      }
+                      const noteValue = noteValues[track.id]?.[currentStep] || '-';
                       
                       return (
                         <div key={track.id} style={{
