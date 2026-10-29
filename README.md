@@ -65,6 +65,55 @@ Circuit Tracks AI Studio ist eine professionelle Entwicklungs- und Steuerungsumg
 
 ---
 
+## 🛠️ Setup (Erste Installation)
+
+### Automatische Einrichtung
+
+Führe das Setup-Skript aus um alle Abhängigkeiten zu installieren:
+
+```bash
+./setup.sh
+```
+
+Das Skript:
+- ✅ Installiert Python-Dependencies mit `uv`
+- ✅ Klont `circuit-tracks-tools` nach `vendor/`
+- ✅ Installiert Frontend-Dependencies mit `npm`
+- ✅ Erstellt `.env` aus `.env.example`
+
+### Manuelle Einrichtung
+
+Falls du es manuell machen möchtest:
+
+```bash
+# 1. Python-Dependencies installieren
+uv sync
+
+# 2. circuit-tracks-tools klonen
+mkdir -p vendor
+git clone https://github.com/digitalhobbit/circuit-tools.git vendor/circuit-tracks-tools
+
+# 3. Frontend-Dependencies installieren
+cd frontend && npm install && cd ..
+
+# 4. .env konfigurieren
+cp .env.example .env
+# Bearbeite .env und füge deinen GOOGLE_API_KEY hinzu
+```
+
+### LLM API Key einrichten
+
+Für die KI-Integration benötigst du einen Google Gemini API-Key:
+
+1. Gehe zu: https://makersuite.google.com/app/apikey
+2. Erstelle einen API-Key (kostenlos)
+3. Füge ihn in `.env` ein:
+   ```
+   GOOGLE_API_KEY=dein_api_key_hier
+   ```
+
+---
+
 ## Startanleitung (Getting Started / How to Run)
 
 Diese Anleitung beschreibt, wie das Gesamtsystem (FastAPI-Bridge und React-Frontend) gestartet wird. Dies ist besonders für Google Cloud Shell und Headless-Linux-Umgebungen relevant, da das System automatisch auf den Mock-Modus zurückfällt, wenn keine physische Circuit Tracks per USB angeschlossen ist.
