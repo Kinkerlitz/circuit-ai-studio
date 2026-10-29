@@ -317,6 +317,111 @@ export default function App() {
     setPrompt('');
   };
 
+  const handlePlayPattern = async () => {
+    try {
+      // Parse the agent output to get the pattern
+      const output = JSON.parse(agentOutput);
+      const pattern = output.pattern;
+      
+      if (!pattern || !pattern.tracks) {
+        addLog('✘ No valid pattern found in output');
+        return;
+      }
+      
+      setIsPlaying(true);
+      addLog(`▶ Playing pattern: ${pattern.name || 'unnamed'}`);
+      
+      // Initialize audio context
+      if (!audioCtxRef.current) {
+        audioCtxRef.current = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      const ctx = audioCtxRef.current;
+      
+      // Convert pattern to playable notes
+      const tracks = pattern.tracks;
+      const bpm = 120;
+      const stepDuration = 60.0 / bpm / 4.0; // 16th note
+      const length = pattern.length || 16;
+      
+      // Schedule all notes
+      const startTime = ctx.currentTime + 0.1; // Small delay
+      
+      for (let loop = 0; loop < 2; loop++) {
+        for (let stepIdx = 0; stepIdx < length; stepIdx++) {
+          const stepTime = startTime + (loop * length + stepIdx) * stepDuration;
+          
+          // Play each track
+          for (const [trackName, trackData] of Object.entries(tracks)) {
+            const steps = trackData.steps || [];
+            const step = steps.find(s => s.index === stepIdx);
+            
+            if (step) {
+              const note = step.note || 60;
+              const velocity = (step.velocity || 100) / 127.0;
+              const gate = step.gate || 0.5;
+              const duration = stepDuration * gate;
+              
+              // Convert MIDI note to frequency
+              const frequency = 440 * Math.pow(2, (note - 69) / 12);
+              
+              // Create oscillator
+              const osc = ctx.createOscillator();
+              const gain = ctx.createGain();
+              
+              // Different waveforms for different tracks
+              if (trackName.startsWith('drum')) {
+                osc.type = 'square'; // Drums: square wave
+              } else {
+                osc.type = 'sawtooth'; // Synth: sawtooth wave
+              }
+              
+              osc.frequency.setValueAtTime(frequency, stepTime);
+              gain.gain.setValueAtTime(velocity * 0.3, stepTime);
+              gain.gain.exponentialRampToValueAtTime(0.001, stepTime + duration);
+              
+              osc.connect(gain);
+              gain.connect(ctx.destination);
+              
+              osc.start(stepTime);
+              osc.stop(stepTime + duration);
+            }
+          }
+        }
+      }
+      
+      addLog(`✔ Playback scheduled: ${Object.keys(tracks).join(', ')} at ${bpm} BPM`);
+      
+      // Stop playing state after estimated duration
+      const totalDuration = (length * 2 * stepDuration * 1000);
+      setTimeout(() => {
+        setIsPlaying(false);
+        addLog('⏹ Playback finished');
+      }, totalDuration);
+      
+    } catch (err) {
+      addLog(`✘ Play error: ${err.message}`);
+      setIsPlaying(false);
+    }
+  };
+
+  const handleStopPattern = async () => {
+    try {
+      const response = await fetch('http://localhost:8770/api/stop', {
+        method: 'POST'
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      setIsPlaying(false);
+      addLog('⏹ Playback stopped');
+      
+    } catch (err) {
+      addLog(`✘ Stop error: ${err.message}`);
+    }
+  };
+
   const activeTrack = TRACKS.find(t => t.id === activeTrackId);
   const activeTrackColor = activeTrack?.color || 'synth1';
   const activeTrackHex = activeTrack?.hex || '#00d2d3';
@@ -465,6 +570,52 @@ export default function App() {
             <pre className="inspect-box">
               {agentOutput}
             </pre>
+          </div>
+
+          <div className="playback-section" style={{ margin: '15px 0', padding: '15px', background: 'rgba(0,0,0,0.2)', borderRadius: '8px' }}>
+            <h3>Pattern Playback</h3>
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+              <button
+                onClick={handlePlayPattern}
+                disabled={isPlaying || !agentOutput.includes('"pattern"')}
+                style={{
+                  padding: '10px 20px',
+                  background: isPlaying ? '#666' : '#00d2d3',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '5px',
+                  cursor: isPlaying ? 'not-allowed' : 'pointer',
+                  fontWeight: 'bold'
+                }}
+              >
+                {isPlaying ? '⏸ Playing...' : '▶ Play Pattern'}
+              </button>
+              <button
+                onClick={handleStopPattern}
+                disabled={!isPlaying}
+                style={{
+                  padding: '10px 20px',
+                  background: !isPlaying ? '#666' : '#ff6b6b',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '5px',
+                  cursor: !isPlaying ? 'not-allowed' : 'pointer',
+                  fontWeight: 'bold'
+                }}
+              >
+                ⏹ Stop
+              </button>
+              <div style={{ marginLeft: 'auto', color: '#aaa', fontSize: '12px' }}>
+                BPM: <input
+                  type="number"
+                  value={bpm}
+                  onChange={(e) => setBpm(parseInt(e.target.value))}
+                  min="40"
+                  max="240"
+                  style={{ width: '60px', padding: '5px', background: '#333', color: 'white', border: '1px solid #555', borderRadius: '3px' }}
+                />
+              </div>
+            </div>
           </div>
 
           <div className="sync-section">

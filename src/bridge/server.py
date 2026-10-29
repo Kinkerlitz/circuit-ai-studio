@@ -23,6 +23,7 @@ from src.bridge.midi_detector import (
     detect_circuit_tracks,
     get_midi_connection,
 )
+from src.bridge.player import MidiPatternPlayer
 from src.core.validator import validate_ncs_roundtrip, validate_patch_roundtrip
 from src.core.wrapper import song_to_ncs_bytes
 
@@ -289,6 +290,7 @@ class HardwareBridge:
 
 
 bridge = HardwareBridge()
+player = MidiPatternPlayer()
 
 
 @asynccontextmanager
@@ -296,6 +298,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     bridge.initialize()
     yield
     bridge.shutdown()
+    player.stop()
 
 
 app = FastAPI(
@@ -459,6 +462,80 @@ Use MIDI notes 60-72 for synth, 60 for drums. Keep it simple and musical."""
 
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Gemini API error: {str(exc)}") from exc
+
+
+class PlayPatternRequest(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    pattern: dict[str, Any]
+    bpm: float = Field(default=120.0, ge=40.0, le=240.0)
+    loops: int = Field(default=1, ge=1, le=16)
+
+
+@app.post("/api/play")
+async def play_pattern(req: PlayPatternRequest) -> dict[str, Any]:
+    """Play a pattern through the MIDI sequencer."""
+    try:
+        pattern_data = req.pattern
+        tracks = pattern_data.get("tracks", {})
+        length = pattern_data.get("length", 16)
+        
+        # Convert pattern to player format
+        player_tracks = {}
+        for track_name, track_data in tracks.items():
+            steps = track_data.get("steps", [])
+            steps_dict = {}
+            for step in steps:
+                idx = step.get("index", 0)
+                steps_dict[str(idx)] = {
+                    "note": step.get("note", 60),
+                    "velocity": step.get("velocity", 100),
+                    "gate": step.get("gate", 0.5),
+                }
+            player_tracks[track_name] = {
+                "steps": steps_dict,
+                "length": length,
+            }
+        
+        # Start playback in background
+        import threading
+        
+        def play_loop():
+            step_duration = 60.0 / req.bpm / 4.0  # 16th note duration
+            for loop in range(req.loops):
+                for step_idx in range(length):
+                    if player._stop_event.is_set():
+                        break
+                    player.play_step(player_tracks, step_idx, step_duration)
+                    time.sleep(step_duration)
+        
+        # Stop any current playback
+        if player.is_playing:
+            player.stop()
+        
+        # Start new playback
+        player._stop_event.clear()
+        player._is_playing = True
+        thread = threading.Thread(target=play_loop, daemon=True)
+        player._thread = thread
+        thread.start()
+        
+        return {
+            "status": "playing",
+            "pattern": pattern_data.get("name", "unnamed"),
+            "bpm": req.bpm,
+            "loops": req.loops,
+            "tracks": list(tracks.keys()),
+        }
+    
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Playback error: {str(exc)}") from exc
+
+
+@app.post("/api/stop")
+async def stop_playback() -> dict[str, str]:
+    """Stop pattern playback."""
+    player.stop()
+    return {"status": "stopped"}
 
 
 @app.websocket("/ws")
