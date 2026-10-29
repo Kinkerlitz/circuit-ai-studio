@@ -331,6 +331,27 @@ export default function App() {
       setIsPlaying(true);
       addLog(`▶ Playing pattern: ${pattern.name || 'unnamed'}`);
       
+      // Load pattern into grid
+      const newGrid = {};
+      TRACKS.forEach(t => {
+        newGrid[t.id] = Array(NUM_STEPS).fill(false);
+      });
+      
+      // Convert pattern tracks to grid
+      for (const [trackName, trackData] of Object.entries(pattern.tracks)) {
+        const trackId = trackName.toLowerCase();
+        if (newGrid[trackId]) {
+          const steps = trackData.steps || [];
+          steps.forEach(step => {
+            const idx = step.index;
+            if (idx >= 0 && idx < NUM_STEPS) {
+              newGrid[trackId][idx] = true;
+            }
+          });
+        }
+      }
+      setGrid(newGrid);
+      
       // Initialize audio context
       if (!audioCtxRef.current) {
         audioCtxRef.current = new (window.AudioContext || window.webkitAudioContext)();
@@ -343,12 +364,17 @@ export default function App() {
       const stepDuration = 60.0 / bpm / 4.0; // 16th note
       const length = pattern.length || 16;
       
-      // Schedule all notes
+      // Schedule all notes with playhead animation
       const startTime = ctx.currentTime + 0.1; // Small delay
       
       for (let loop = 0; loop < 2; loop++) {
         for (let stepIdx = 0; stepIdx < length; stepIdx++) {
           const stepTime = startTime + (loop * length + stepIdx) * stepDuration;
+          
+          // Schedule playhead update
+          setTimeout(() => {
+            setCurrentStep(stepIdx);
+          }, (stepTime - ctx.currentTime) * 1000);
           
           // Play each track
           for (const [trackName, trackData] of Object.entries(tracks)) {
@@ -395,12 +421,14 @@ export default function App() {
       const totalDuration = (length * 2 * stepDuration * 1000);
       setTimeout(() => {
         setIsPlaying(false);
+        setCurrentStep(0);
         addLog('⏹ Playback finished');
       }, totalDuration);
       
     } catch (err) {
       addLog(`✘ Play error: ${err.message}`);
       setIsPlaying(false);
+      setCurrentStep(0);
     }
   };
 
@@ -522,6 +550,62 @@ export default function App() {
                       />
                     );
                   })}
+                </div>
+
+                {/* Note Display - Shows notes for current step */}
+                <div className="note-display" style={{
+                  marginTop: '8px',
+                  padding: '8px',
+                  background: 'rgba(0,0,0,0.3)',
+                  borderRadius: '4px',
+                  minHeight: '40px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px'
+                }}>
+                  <div style={{ color: '#888', fontSize: '11px', minWidth: '60px' }}>
+                    Step {currentStep + 1}/{patternLength}:
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    {TRACKS.map(track => {
+                      const hasNote = grid[track.id][currentStep];
+                      if (!hasNote) return null;
+                      
+                      // Find note value from agentOutput pattern
+                      let noteValue = '-';
+                      try {
+                        const output = JSON.parse(agentOutput);
+                        const pattern = output.pattern;
+                        if (pattern && pattern.tracks) {
+                          const trackData = pattern.tracks[track.id] || pattern.tracks[track.id.toUpperCase()];
+                          if (trackData) {
+                            const step = trackData.steps.find(s => s.index === currentStep);
+                            if (step) {
+                              noteValue = step.note;
+                            }
+                          }
+                        }
+                      } catch (e) {
+                        // Ignore parse errors
+                      }
+                      
+                      return (
+                        <div key={track.id} style={{
+                          padding: '4px 8px',
+                          background: track.hex || '#00d2d3',
+                          color: 'white',
+                          borderRadius: '3px',
+                          fontSize: '12px',
+                          fontWeight: 'bold'
+                        }}>
+                          {track.id.toUpperCase()}: {noteValue}
+                        </div>
+                      );
+                    })}
+                    {!TRACKS.some(t => grid[t.id][currentStep]) && (
+                      <div style={{ color: '#666', fontSize: '12px' }}>--- leer ---</div>
+                    )}
+                  </div>
                 </div>
 
                 {/* Rows 3 & 4: Notes / Triggers */}
